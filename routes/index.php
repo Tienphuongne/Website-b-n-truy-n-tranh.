@@ -33,7 +33,7 @@ $routes = [
 if (preg_match('#^product/detail/(\d+)$#', $action, $matches)) {
     $_GET['id'] = $matches[1];
     $handler = [ProductsController::class, 'detail'];
-} elseif (preg_match('#^admin/([a-z-]+)(?:/(create|edit|delete))?$#', $action, $matches)) {
+} elseif (preg_match('#^admin/([a-z-]+)(?:/(create|edit|delete|detail))?$#', $action, $matches)) {
     $_GET['resource'] = $matches[1];
     $_GET['task'] = $matches[2] ?? '';
     $handler = [AdminController::class, 'resource'];

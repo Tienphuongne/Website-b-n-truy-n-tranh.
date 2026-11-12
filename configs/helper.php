@@ -22,6 +22,84 @@ if (!function_exists('upload_file')) {
     }
 }
 
+if (!function_exists('save_uploaded_image')) {
+    /**
+     * Lưu một ảnh tải lên vào assets/uploads/{folder} và trả về đường dẫn tương đối.
+     * Chỉ chấp nhận các định dạng ảnh phổ biến, tối đa 5MB.
+     */
+    function save_uploaded_image(array $file, $folder = 'products')
+    {
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        if ($error !== UPLOAD_ERR_OK) {
+            throw new DomainException('Tải ảnh lên không thành công. Vui lòng thử lại.');
+        }
+
+        $tmpName = (string) ($file['tmp_name'] ?? '');
+        $size = (int) ($file['size'] ?? 0);
+        if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+            throw new DomainException('Tệp ảnh tải lên không hợp lệ.');
+        }
+        if ($size < 1024 || $size > 5 * 1024 * 1024) {
+            throw new DomainException('Ảnh phải có dung lượng từ 1KB đến 5MB.');
+        }
+
+        $extensions = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+        ];
+        $mime = null;
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($tmpName) ?: null;
+        }
+        if ($mime === null) {
+            $info = @getimagesize($tmpName);
+            $mime = $info['mime'] ?? null;
+        }
+        if (!is_string($mime) || !isset($extensions[$mime])) {
+            throw new DomainException('Chỉ hỗ trợ ảnh JPG, PNG, WEBP hoặc GIF.');
+        }
+
+        $folder = trim(str_replace('\\', '/', (string) $folder), '/');
+        if ($folder === '' || strpos($folder, '..') !== false) {
+            throw new DomainException('Thư mục lưu ảnh không hợp lệ.');
+        }
+
+        $directory = PATH_ASSETS_UPLOADS . $folder . '/';
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            throw new DomainException('Không thể tạo thư mục lưu ảnh. Vui lòng kiểm tra quyền ghi.');
+        }
+
+        $fileName = date('YmdHis') . '-' . bin2hex(random_bytes(6)) . '.' . $extensions[$mime];
+        if (!move_uploaded_file($tmpName, $directory . $fileName)) {
+            throw new DomainException('Không thể lưu ảnh tải lên. Vui lòng thử lại.');
+        }
+
+        return $folder . '/' . $fileName;
+    }
+}
+
+if (!function_exists('delete_upload_file')) {
+    function delete_upload_file($relativePath)
+    {
+        $relativePath = ltrim(str_replace(['\\', '..'], ['/', ''], (string) $relativePath), '/');
+        if ($relativePath === '') {
+            return;
+        }
+
+        $base = realpath(PATH_ASSETS_UPLOADS);
+        $path = realpath(PATH_ASSETS_UPLOADS . $relativePath);
+        if ($base && $path && strpos($path, $base . DIRECTORY_SEPARATOR) === 0 && is_file($path)) {
+            @unlink($path);
+        }
+    }
+}
+
 if (!function_exists('e')) {
     function e($value)
     {

@@ -1,8 +1,9 @@
 <section class="admin-panel admin-form-panel">
     <div class="admin-panel-heading"><div><h2><?= e($title) ?></h2><p>Các trường bắt buộc được đánh dấu theo biểu mẫu.</p></div><a href="<?= e(url('admin/' . ($_GET['resource'] ?? ''))) ?>">← Quay lại danh sách</a></div>
     <?php if (empty($databaseError)): ?>
-        <form method="post" action="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/' . ($_GET['task'] ?? '') . (isset($_GET['id']) ? '?id=' . (int) $_GET['id'] : ''))) ?>" class="admin-data-form">
+        <form method="post" enctype="multipart/form-data" action="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/' . ($_GET['task'] ?? '') . (isset($_GET['id']) ? '?id=' . (int) $_GET['id'] : ''))) ?>" class="admin-data-form">
             <?= csrf_field() ?>
+            <?php $selectedGenres = array_map('intval', $record['_genre_ids'] ?? []); ?>
             <?php foreach (($definition['fields'] ?? []) as $field): ?>
                 <?php $value = $record[$field['name']] ?? ''; ?>
                 <?php if ($field['type'] === 'checkbox'): ?>
@@ -21,6 +22,30 @@
                     <select class="form-select mb-3" id="field-<?= e($field['name']) ?>" name="<?= e($field['name']) ?>" required>
                         <?php foreach ($field['options'] as $option => $label): ?><option value="<?= e($option) ?>" <?= (string) $value === (string) $option ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?>
                     </select>
+                <?php elseif ($field['type'] === 'multiselect'): ?>
+                    <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
+                    <select class="form-select mb-3" id="field-<?= e($field['name']) ?>" name="<?= e($field['name']) ?>[]" multiple size="6">
+                        <?php foreach (($formOptions[$field['options_table']] ?? []) as $option): ?><option value="<?= (int) $option['id'] ?>" <?= in_array((int) $option['id'], $selectedGenres, true) ? 'selected' : '' ?>><?= e($option['name']) ?></option><?php endforeach; ?>
+                    </select>
+                    <p class="admin-field-hint">Giữ Ctrl (Windows) hoặc Command (macOS) để chọn nhiều thể loại.</p>
+                <?php elseif ($field['type'] === 'images'): ?>
+                    <?php if (!empty($record['_images'])): ?>
+                        <label class="form-label"><?= e($field['label']) ?></label>
+                        <div class="admin-thumb-grid mb-3">
+                            <?php foreach ($record['_images'] as $image): ?>
+                                <label class="admin-thumb">
+                                    <img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($image['image_path'], '/\\')) ?>" alt="Ảnh sản phẩm">
+                                    <span><input type="checkbox" name="remove_images[]" value="<?= (int) $image['id'] ?>"> Xóa ảnh này</span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php elseif ($field['type'] === 'file' || $field['type'] === 'file-multiple'): ?>
+                    <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
+                    <?php if ($field['type'] === 'file' && !empty($record[$field['column'] ?? ''])): ?>
+                        <div class="admin-cover-preview"><img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($record[$field['column']], '/\\')) ?>" alt="Ảnh hiện tại"></div>
+                    <?php endif; ?>
+                    <input class="form-control mb-3" id="field-<?= e($field['name']) ?>" type="file" name="<?= e($field['name']) ?><?= $field['type'] === 'file-multiple' ? '[]' : '' ?>" accept="<?= e($field['accept'] ?? 'image/*') ?>" <?= $field['type'] === 'file-multiple' ? 'multiple' : '' ?>>
                 <?php else: ?>
                     <?php if ($field['type'] === 'datetime-local' && $value): $value = str_replace(' ', 'T', substr($value, 0, 16)); endif; ?>
                     <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>

@@ -25,7 +25,7 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
    UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
    ```
 
-5. Ảnh bìa có thể đặt trong `assets/uploads/`; lưu đường dẫn tương đối trong `products.cover_image`.
+5. Ảnh bìa có thể đặt trong `assets/uploads/`; lưu đường dẫn tương đối trong `products.cover_image`. Ngoài ra trang quản trị hỗ trợ tải ảnh trực tiếp (JPG/PNG/WEBP/GIF, tối đa 5MB) vào `assets/uploads/products/`, nên thư mục `assets/uploads/` cần quyền ghi của tiến trình PHP.
 
 Nếu chưa cấu hình `DB_NAME` hoặc database chưa khả dụng, trang cửa hàng vẫn hiển thị layout và empty state. Không có dữ liệu giả được tự tạo.
 
@@ -34,6 +34,13 @@ Nếu chưa cấu hình `DB_NAME` hoặc database chưa khả dụng, trang cử
 Các URL thân thiện như `/products`, `/product/detail/1`, `/cart`, `/checkout`, `/account`, `/admin` được rewrite về `index.php`. Có thể truy cập qua query `?action=products` nếu môi trường không bật rewrite.
 
 Trang admin được bảo vệ bằng role `admin`. Các form POST dùng CSRF token; mật khẩu được lưu bằng `password_hash()`. Thanh toán hiện hỗ trợ COD và chuyển khoản thủ công, chưa tích hợp cổng thanh toán.
+
+Các chức năng quản trị chính:
+
+- Sản phẩm: thêm/sửa/xóa, tải ảnh bìa, chọn nhiều thể loại và quản lý thư viện ảnh.
+- Đơn hàng: xem chi tiết khách hàng, sản phẩm, phí vận chuyển/giảm giá và cập nhật trạng thái.
+- Liên hệ: theo dõi và đổi trạng thái tin nhắn từ trang liên hệ.
+- Thống kê: doanh thu 7 ngày gần nhất trên dashboard và báo cáo theo khoảng ngày tại `/admin/reports` (tối đa 5 năm gần nhất).
 
 ## Kiểm tra
 
