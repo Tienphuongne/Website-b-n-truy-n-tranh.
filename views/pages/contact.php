@@ -1,10 +1,10 @@
 <section class="container section-space">
-    <div class="page-heading"><div><span class="eyebrow">CHÚNG TÔI LUÔN SẴN SÀNG LẮNG NGHE</span><h1>Liên hệ</h1><p>Cần hỗ trợ? Gửi lời nhắn cho Manga House.</p></div></div>
+    <div class="page-heading"><div><span class="eyebrow">CHÚNG TÔI LUÔN SẴN SÀNG LẮNG NGHE</span><h1>Liên hệ</h1><p>Cần hỗ trợ? Gửi lời nhắn cho TruyenThuVi.</p></div></div>
     <div class="contact-layout">
         <div class="contact-info">
             <div class="contact-info-card"><span>⌖</span><div><h2>Địa chỉ</h2><p>Thông tin cửa hàng sẽ được cập nhật.</p></div></div>
             <div class="contact-info-card"><span>☎</span><div><h2>Điện thoại</h2><p>1900 0000</p></div></div>
-            <div class="contact-info-card"><span>✉</span><div><h2>Email</h2><p>hello@mangahouse.example</p></div></div>
+            <div class="contact-info-card"><span>✉</span><div><h2>Email</h2><p>hello@truyenthuvi.vn</p></div></div>
             <p class="small text-muted">Thông tin liên hệ hiện là nội dung mẫu của dự án học tập; hãy cập nhật trước khi đưa website vào sử dụng thực tế.</p>
         </div>
         <form class="contact-form" method="post" action="<?= e(url('contact')) ?>">

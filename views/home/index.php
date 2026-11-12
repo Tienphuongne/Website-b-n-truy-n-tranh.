@@ -8,7 +8,7 @@
         </div>
         <div class="hero-art" aria-hidden="true">
             <div class="hero-spark spark-one">✦</div><div class="hero-spark spark-two">✧</div>
-            <div class="hero-book book-back"></div><div class="hero-book book-front"><span>MANGA<br>YOUR<br>STORY</span></div>
+            <div class="hero-book book-back"></div><div class="hero-book book-front"><span>TRUYEN<br>THUVI<br>STORY</span></div>
             <div class="hero-orbit"></div>
         </div>
         <div class="hero-caption">GÓC ĐỌC CỦA BẠN</div>
@@ -97,6 +97,6 @@
 </section>
 
 <section class="container newsletter-panel section-space">
-    <div><span class="eyebrow">MANGA HOUSE</span><h2>Chuyện hay đang chờ bạn.</h2><p>Khám phá bộ sưu tập truyện tranh được tuyển chọn cho mọi tâm trạng.</p></div>
+    <div><span class="eyebrow">TRUYENTHUVI</span><h2>Chuyện hay đang chờ bạn.</h2><p>Khám phá bộ sưu tập truyện tranh được tuyển chọn cho mọi tâm trạng.</p></div>
     <a class="btn btn-light" href="<?= e(url('products')) ?>">Bắt đầu khám phá <span aria-hidden="true">→</span></a>
 </section>

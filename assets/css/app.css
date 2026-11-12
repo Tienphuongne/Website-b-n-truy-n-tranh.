@@ -36,6 +36,7 @@ h1, h2, h3, p { margin-top: 0; }
 .brand { align-items: center; color: var(--ink); display: inline-flex; flex: 0 0 auto; font-size: 19px; font-weight: 800; gap: 9px; letter-spacing: -.06em; }
 .brand:hover { color: var(--ink); }
 .brand-mark { align-items: center; background: var(--accent); border-radius: 10px 10px 10px 3px; color: #fff; display: inline-flex; font-size: 20px; height: 38px; justify-content: center; letter-spacing: 0; width: 38px; }
+img.brand-mark { background: transparent; border-radius: 0; object-fit: contain; }
 .brand-accent { color: var(--accent); }
 .header-search { align-items: center; background: #f7f7f7; border: 1px solid #f1f0ee; border-radius: 9px; display: flex; flex: 1; max-width: 530px; overflow: hidden; }
 .header-search input { background: transparent; border: 0; flex: 1; font: inherit; font-size: 12px; outline: 0; padding: 12px 15px; }
@@ -53,6 +54,7 @@ h1, h2, h3, p { margin-top: 0; }
 .footer-brand { color: #fff; margin-bottom: 17px; }
 .footer-brand:hover { color: #fff; }
 .footer-copy { color: #aeb0b6; font-size: 11px; max-width: 365px; }
+.footer-grid p.footer-tagline { color: #f49073; font-size: 9px; font-weight: 700; letter-spacing: .18em; margin: 0 0 14px; text-transform: uppercase; }
 .footer-heading { color: #fff; font-size: 13px; font-weight: 700; margin-bottom: 18px; }
 .footer-grid > div > a:not(.brand), .footer-grid p { color: #aeb0b6; display: block; font-size: 11px; margin-bottom: 9px; }
 .footer-grid a:hover { color: #fff; }

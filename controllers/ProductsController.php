@@ -37,7 +37,8 @@ class ProductsController extends BaseController
 
     public function detail()
     {
-        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        // Router gán id vào $_GET, filter_input() không đọc được giá trị này.
+        $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT) ?: 0;
         $product = null;
         $genres = [];
         $images = [];

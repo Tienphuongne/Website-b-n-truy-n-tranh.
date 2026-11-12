@@ -1,6 +1,6 @@
 <section class="container section-space auth-section">
     <div class="auth-card">
-        <div class="auth-intro"><span class="brand-mark">M</span><span class="eyebrow">CHÀO MỪNG TRỞ LẠI</span><h1>Đăng nhập</h1><p>Tiếp tục hành trình khám phá những câu chuyện mới.</p></div>
+        <div class="auth-intro"><img class="brand-mark" src="<?= e(PATH_ASSETS . 'images/logo-mark.svg') ?>" alt="" width="38" height="38"><span class="eyebrow">CHÀO MỪNG TRỞ LẠI</span><h1>Đăng nhập</h1><p>Tiếp tục hành trình khám phá những câu chuyện mới.</p></div>
         <form method="post" action="<?= e(url('login')) ?>">
             <?= csrf_field() ?>
             <div class="mb-3"><label class="form-label" for="login">Email hoặc tên đăng nhập</label><input class="form-control" id="login" name="login" required autocomplete="username" value="<?= e($_POST['login'] ?? '') ?>"></div>

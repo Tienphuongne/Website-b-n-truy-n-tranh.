@@ -1,4 +1,4 @@
-# Manga House — PHP MVC
+# TruyenThuVi — PHP MVC
 
 Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trúc MVC hiện có được mở rộng trực tiếp; dữ liệu sản phẩm, người dùng, đơn hàng và danh mục được đọc/ghi qua Model, không khai báo sản phẩm mẫu trong View.
 

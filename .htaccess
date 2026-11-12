@@ -1,4 +1,12 @@
 Options -Indexes
+
+# Cấu hình kết nối MySQL cho môi trường local (Laragon).
+# Xem configs/env.php - các biến này được đọc bằng getenv().
+SetEnv DB_HOST localhost
+SetEnv DB_PORT 3306
+SetEnv DB_USERNAME root
+SetEnv DB_NAME manga_house
+
 RewriteEngine On
 
 RewriteRule ^(?:configs|controllers|models|views|database)(?:/|$) - [F,L,NC]

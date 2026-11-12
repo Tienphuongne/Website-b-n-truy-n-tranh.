@@ -4,9 +4,9 @@
         <div class="detail-layout">
             <div class="detail-cover">
                 <?php if (!empty($product['cover_image'])): ?>
-                    <img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($product['cover_image'], '/\\')) ?>" alt="Bìa truyện <?= e($product['name']) ?>">
+                    <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>">
                 <?php else: ?>
-                    <div class="cover-placeholder detail-placeholder"><span>✦</span><small>MANGA HOUSE</small></div>
+                    <div class="cover-placeholder detail-placeholder"><span>✦</span><small>TRUYENTHUVI</small></div>
                 <?php endif; ?>
             </div>
             <div class="detail-info">
@@ -41,7 +41,7 @@
         </section>
         <?php if (!empty($images)): ?>
             <section class="product-gallery">
-                <?php foreach ($images as $image): ?><img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($image, '/\\')) ?>" alt="Ảnh truyện <?= e($product['name']) ?>" loading="lazy"><?php endforeach; ?>
+                <?php foreach ($images as $image): ?><img src="<?= e(product_image_url($image)) ?>" alt="Ảnh truyện <?= e($product['name']) ?>" loading="lazy"><?php endforeach; ?>
             </section>
         <?php endif; ?>
         <section class="reviews-section">

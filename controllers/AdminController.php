@@ -70,11 +70,15 @@ class AdminController extends BaseController
 
                 if ($databaseError === null && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $this->requirePost();
-                    $model->saveRecord(
-                        $key,
-                        $task === 'edit' ? $id : null,
-                        $_POST
-                    );
+                    if ($key === 'orders' && $task === 'edit') {
+                        (new OrderModel())->updateStatus($id, request_string($_POST, 'status'));
+                    } else {
+                        $model->saveRecord(
+                            $key,
+                            $task === 'edit' ? $id : null,
+                            $_POST
+                        );
+                    }
                     flash('success', $task === 'edit' ? 'Đã cập nhật dữ liệu.' : 'Đã thêm dữ liệu.');
                     redirect('admin/' . $key);
                 }

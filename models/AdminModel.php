@@ -13,6 +13,7 @@ class AdminModel extends BaseModel
                 ['name' => 'category_id', 'label' => 'Danh mục', 'type' => 'foreign', 'table' => 'categories'],
                 ['name' => 'author_id', 'label' => 'Tác giả', 'type' => 'foreign', 'table' => 'authors'],
                 ['name' => 'publisher_id', 'label' => 'Nhà xuất bản', 'type' => 'foreign', 'table' => 'publishers'],
+                ['name' => 'genre_ids', 'label' => 'Thể loại', 'type' => 'genres', 'table' => 'genres'],
                 ['name' => 'short_description', 'label' => 'Mô tả ngắn', 'type' => 'textarea'],
                 ['name' => 'description', 'label' => 'Mô tả chi tiết', 'type' => 'textarea'],
                 ['name' => 'cover_image', 'label' => 'Đường dẫn ảnh bìa', 'type' => 'text'],
@@ -137,10 +138,24 @@ class AdminModel extends BaseModel
             return null;
         }
 
-        return $this->execute(
+        $record = $this->execute(
             'SELECT * FROM ' . $definition['table'] . ' WHERE id = :id LIMIT 1',
             ['id' => (int) $id]
         )->fetch();
+
+        if ($record && $definition['table'] === 'products') {
+            $record['genre_ids'] = $this->getGenresForProduct((int) $id);
+        }
+
+        return $record;
+    }
+
+    public function getGenresForProduct($productId)
+    {
+        return $this->execute(
+            'SELECT genre_id FROM product_genres WHERE product_id = :id',
+            ['id' => (int) $productId]
+        )->fetchAll(PDO::FETCH_COLUMN);
     }
 
     public function getForeignOptions()
@@ -149,6 +164,7 @@ class AdminModel extends BaseModel
             'categories' => $this->execute('SELECT id, name FROM categories ORDER BY name')->fetchAll(),
             'authors' => $this->execute('SELECT id, name FROM authors ORDER BY name')->fetchAll(),
             'publishers' => $this->execute('SELECT id, name FROM publishers ORDER BY name')->fetchAll(),
+            'genres' => $this->execute('SELECT id, name FROM genres ORDER BY name')->fetchAll(),
         ];
     }
 
@@ -160,8 +176,17 @@ class AdminModel extends BaseModel
         }
 
         $values = [];
+        $genreIds = [];
         foreach ($definition['fields'] as $field) {
             $name = $field['name'];
+            if ($field['type'] === 'genres') {
+                $raw = $input[$name] ?? [];
+                $raw = is_array($raw) ? $raw : [];
+                $genreIds = array_values(array_unique(array_filter(array_map('intval', $raw), function ($genreId) {
+                    return $genreId > 0;
+                })));
+                continue;
+            }
             $rawValue = $input[$name] ?? '';
             $value = $field['type'] === 'checkbox'
                 ? (!empty($rawValue) ? 1 : 0)
@@ -207,6 +232,14 @@ class AdminModel extends BaseModel
             $values[$name] = $value;
         }
 
+        if ($genreIds) {
+            $placeholders = implode(',', array_fill(0, count($genreIds), '?'));
+            $genreIds = array_map('intval', $this->execute(
+                "SELECT id FROM genres WHERE id IN ($placeholders)",
+                $genreIds
+            )->fetchAll(PDO::FETCH_COLUMN));
+        }
+
         if ($id) {
             $assignments = [];
             foreach (array_keys($values) as $name) {
@@ -217,6 +250,7 @@ class AdminModel extends BaseModel
                 'UPDATE ' . $definition['table'] . ' SET ' . implode(', ', $assignments) . ' WHERE id = :id',
                 $values
             );
+            $productId = (int) $id;
         } else {
             $columns = array_keys($values);
             $placeholders = array_map(function ($name) {
@@ -226,6 +260,22 @@ class AdminModel extends BaseModel
                 'INSERT INTO ' . $definition['table'] . ' (' . implode(', ', $columns) . ')
                  VALUES (' . implode(', ', $placeholders) . ')',
                 $values
+            );
+            $productId = (int) $this->pdo->lastInsertId();
+        }
+
+        if ($definition['table'] !== 'products') {
+            return;
+        }
+
+        $this->execute(
+            'DELETE FROM product_genres WHERE product_id = :product_id',
+            ['product_id' => $productId]
+        );
+        foreach ($genreIds as $genreId) {
+            $this->execute(
+                'INSERT INTO product_genres (product_id, genre_id) VALUES (:product_id, :genre_id)',
+                ['product_id' => $productId, 'genre_id' => $genreId]
             );
         }
     }

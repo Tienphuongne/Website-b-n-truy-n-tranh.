@@ -1,2 +1,5 @@
+# Bỏ qua nội dung upload của người dùng, nhưng giữ ảnh bìa mẫu của dự án.
 *
 !.gitignore
+!covers/
+!covers/*.svg

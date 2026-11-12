@@ -16,6 +16,12 @@
                         <option value="">Không chọn</option>
                         <?php foreach (($formOptions[$field['table']] ?? []) as $option): ?><option value="<?= (int) $option['id'] ?>" <?= (string) $value === (string) $option['id'] ? 'selected' : '' ?>><?= e($option['name']) ?></option><?php endforeach; ?>
                     </select>
+                <?php elseif ($field['type'] === 'genres'): ?>
+                    <label class="form-label"><?= e($field['label']) ?></label>
+                    <?php $selectedGenres = array_map('intval', (array) $value); ?>
+                    <div class="d-flex flex-wrap gap-3 mb-3">
+                        <?php foreach (($formOptions[$field['table']] ?? []) as $option): ?><label class="form-check admin-checkbox"><input class="form-check-input" type="checkbox" name="<?= e($field['name']) ?>[]" value="<?= (int) $option['id'] ?>" <?= in_array((int) $option['id'], $selectedGenres, true) ? 'checked' : '' ?>><span class="form-check-label"><?= e($option['name']) ?></span></label><?php endforeach; ?>
+                    </div>
                 <?php elseif ($field['type'] === 'select'): ?>
                     <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
                     <select class="form-select mb-3" id="field-<?= e($field['name']) ?>" name="<?= e($field['name']) ?>" required>

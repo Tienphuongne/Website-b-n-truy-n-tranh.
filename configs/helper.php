@@ -49,6 +49,22 @@ if (!function_exists('url')) {
     }
 }
 
+if (!function_exists('product_image_url')) {
+    function product_image_url($coverImage)
+    {
+        if (empty($coverImage)) {
+            return '';
+        }
+        if (str_starts_with($coverImage, 'http://') || str_starts_with($coverImage, 'https://')) {
+            return $coverImage;
+        }
+        if (str_starts_with($coverImage, 'assets/')) {
+            return BASE_URL . ltrim($coverImage, '/');
+        }
+        return BASE_ASSETS_UPLOADS . ltrim($coverImage, '/\\');
+    }
+}
+
 if (!function_exists('csrf_token')) {
     function csrf_token()
     {

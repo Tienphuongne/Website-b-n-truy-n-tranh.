@@ -1,5 +1,5 @@
 <section class="container section-space">
-    <div class="page-heading"><div><span class="eyebrow">MANGA HOUSE</span><h1>Tài khoản của tôi</h1></div>
+    <div class="page-heading"><div><span class="eyebrow">TRUYENTHUVI</span><h1>Tài khoản của tôi</h1></div>
         <form action="<?= e(url('logout')) ?>" method="post"><?= csrf_field() ?><button class="btn btn-outline-secondary" type="submit">Đăng xuất</button></form>
     </div>
     <div class="account-layout">
