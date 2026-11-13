@@ -13,11 +13,11 @@ class AdminModel extends BaseModel
                 ['name' => 'category_id', 'label' => 'Danh mục', 'type' => 'foreign', 'table' => 'categories'],
                 ['name' => 'author_id', 'label' => 'Tác giả', 'type' => 'foreign', 'table' => 'authors'],
                 ['name' => 'publisher_id', 'label' => 'Nhà xuất bản', 'type' => 'foreign', 'table' => 'publishers'],
+                ['name' => 'genre_ids', 'label' => 'Thể loại', 'type' => 'genres', 'table' => 'genres'],
                 ['name' => 'short_description', 'label' => 'Mô tả ngắn', 'type' => 'textarea'],
                 ['name' => 'description', 'label' => 'Mô tả chi tiết', 'type' => 'textarea'],
                 ['name' => 'cover_image', 'label' => 'Đường dẫn ảnh bìa', 'type' => 'text'],
                 ['name' => 'cover_upload', 'label' => 'Hoặc tải ảnh bìa lên', 'type' => 'file', 'column' => 'cover_image', 'accept' => 'image/jpeg,image/png,image/webp,image/gif'],
-                ['name' => 'genres', 'label' => 'Thể loại', 'type' => 'multiselect', 'options_table' => 'genres'],
                 ['name' => 'existing_images', 'label' => 'Ảnh trong thư viện', 'type' => 'images'],
                 ['name' => 'gallery_upload', 'label' => 'Tải thêm ảnh vào thư viện', 'type' => 'file-multiple', 'accept' => 'image/jpeg,image/png,image/webp,image/gif'],
                 ['name' => 'sale_price', 'label' => 'Giá bán', 'type' => 'number', 'required' => true],
@@ -185,10 +185,24 @@ class AdminModel extends BaseModel
             return null;
         }
 
-        return $this->execute(
+        $record = $this->execute(
             'SELECT * FROM ' . $definition['table'] . ' WHERE id = :id LIMIT 1',
             ['id' => (int) $id]
         )->fetch();
+
+        if ($record && $definition['table'] === 'products') {
+            $record['genre_ids'] = $this->getGenresForProduct((int) $id);
+        }
+
+        return $record;
+    }
+
+    public function getGenresForProduct($productId)
+    {
+        return $this->execute(
+            'SELECT genre_id FROM product_genres WHERE product_id = :id',
+            ['id' => (int) $productId]
+        )->fetchAll(PDO::FETCH_COLUMN);
     }
 
     public function getForeignOptions()
@@ -359,13 +373,22 @@ class AdminModel extends BaseModel
 
         $values = [];
         $specialFields = [];
+        $genreIds = [];
         foreach ($definition['fields'] as $field) {
-            if (in_array($field['type'], ['file', 'file-multiple', 'multiselect', 'images'], true)) {
+            if (in_array($field['type'], ['file', 'file-multiple', 'images'], true)) {
                 $specialFields[] = $field;
                 continue;
             }
 
             $name = $field['name'];
+            if ($field['type'] === 'genres') {
+                $raw = $input[$name] ?? [];
+                $raw = is_array($raw) ? $raw : [];
+                $genreIds = array_values(array_unique(array_filter(array_map('intval', $raw), function ($genreId) {
+                    return $genreId > 0;
+                })));
+                continue;
+            }
             $rawValue = $input[$name] ?? '';
             $value = $field['type'] === 'checkbox'
                 ? (!empty($rawValue) ? 1 : 0)
@@ -411,10 +434,17 @@ class AdminModel extends BaseModel
             $values[$name] = $value;
         }
 
+        if ($genreIds) {
+            $placeholders = implode(',', array_fill(0, count($genreIds), '?'));
+            $genreIds = array_map('intval', $this->execute(
+                "SELECT id FROM genres WHERE id IN ($placeholders)",
+                $genreIds
+            )->fetchAll(PDO::FETCH_COLUMN));
+        }
+
         $galleryPaths = [];
         $uploadedPaths = [];
         $filesToDelete = [];
-        $genreIds = null;
         $removeImageIds = [];
         $coverColumn = null;
         $oldCoverPath = null;
@@ -456,36 +486,6 @@ class AdminModel extends BaseModel
                         if ($uploadedPath !== null) {
                             $galleryPaths[] = $uploadedPath;
                             $uploadedPaths[] = $uploadedPath;
-                        }
-                    }
-                    continue;
-                }
-
-                if ($field['type'] === 'multiselect') {
-                    $rawValues = $input[$field['name']] ?? [];
-                    if (!is_array($rawValues)) {
-                        $rawValues = [];
-                    }
-                    $genreIds = [];
-                    foreach ($rawValues as $rawValue) {
-                        if (!is_scalar($rawValue) || !ctype_digit((string) $rawValue)) {
-                            throw new DomainException('Giá trị "' . $field['label'] . '" không hợp lệ.');
-                        }
-                        $genreIds[] = (int) $rawValue;
-                    }
-                    $genreIds = array_values(array_unique($genreIds));
-                    if ($genreIds) {
-                        $table = (string) ($field['options_table'] ?? '');
-                        if (!in_array($table, ['genres'], true)) {
-                            throw new DomainException('Tham chiếu dữ liệu không hợp lệ.');
-                        }
-                        $placeholders = implode(',', array_fill(0, count($genreIds), '?'));
-                        $found = (int) $this->execute(
-                            'SELECT COUNT(*) FROM ' . $table . ' WHERE id IN (' . $placeholders . ')',
-                            $genreIds
-                        )->fetchColumn();
-                        if ($found !== count($genreIds)) {
-                            throw new DomainException('Có "' . $field['label'] . '" không tồn tại.');
                         }
                     }
                     continue;

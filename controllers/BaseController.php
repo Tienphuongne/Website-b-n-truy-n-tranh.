@@ -4,7 +4,7 @@ class BaseController
 {
     protected function render($view, array $data = [], $layout = 'main')
     {
-        $title = $data['title'] ?? 'Manga House';
+        $title = $data['title'] ?? 'TruyenThuVi';
         extract($data, EXTR_SKIP);
         require PATH_VIEW . $layout . '.php';
     }
@@ -18,7 +18,8 @@ class BaseController
         }
 
         if (!verify_csrf_token()) {
-            http_response_code(419);
+            // Apache/PHP trên Laragon biến mã 419 (không chuẩn) thành 500, nên dùng 403.
+            http_response_code(403);
             exit('Phiên làm việc đã hết hạn. Vui lòng tải lại trang và thử lại.');
         }
     }

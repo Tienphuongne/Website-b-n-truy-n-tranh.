@@ -75,20 +75,35 @@ class OrderModel extends BaseModel
                     'unit_price' => $item['sale_price'],
                     'quantity' => (int) $item['quantity'],
                 ]);
-                $this->execute(
+                $stockUpdate = $this->execute(
                     'UPDATE products SET stock_quantity = stock_quantity - :decrease,
-                     sold_quantity = sold_quantity + :increase WHERE id = :id',
+                     sold_quantity = sold_quantity + :increase
+                     WHERE id = :id AND stock_quantity >= :minimum',
                     [
                         'decrease' => (int) $item['quantity'],
                         'increase' => (int) $item['quantity'],
+                        'minimum' => (int) $item['quantity'],
                         'id' => (int) $item['id'],
                     ]
                 );
+                if ($stockUpdate->rowCount() === 0) {
+                    throw new DomainException('Số lượng trong kho không đủ cho sản phẩm: ' . $item['name']);
+                }
             }
 
+            $total = $subtotal + $shippingFee - $discount;
             $this->execute(
                 'UPDATE orders SET total_amount = :total WHERE id = :id',
-                ['total' => $subtotal + $shippingFee - $discount, 'id' => $orderId]
+                ['total' => $total, 'id' => $orderId]
+            );
+            $this->execute(
+                "INSERT INTO payments (order_id, method, amount, status, created_at)
+                 VALUES (:order_id, :method, :amount, 'pending', NOW())",
+                [
+                    'order_id' => $orderId,
+                    'method' => $paymentMethod,
+                    'amount' => $total,
+                ]
             );
             if ($couponId) {
                 $this->execute(
@@ -99,6 +114,83 @@ class OrderModel extends BaseModel
             $this->pdo->commit();
 
             return $orderId;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function updateStatus($orderId, $status)
+    {
+        $allowed = ['pending', 'confirmed', 'shipping', 'completed', 'cancelled'];
+        if (!in_array($status, $allowed, true)) {
+            throw new DomainException('Trạng thái đơn hàng không hợp lệ.');
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $order = $this->execute(
+                'SELECT id, status FROM orders WHERE id = :id FOR UPDATE',
+                ['id' => (int) $orderId]
+            )->fetch();
+
+            if (!$order) {
+                throw new DomainException('Không tìm thấy đơn hàng.');
+            }
+            if ($order['status'] === $status) {
+                $this->pdo->commit();
+
+                return;
+            }
+            if ($order['status'] === 'cancelled') {
+                throw new DomainException('Đơn hàng đã hủy không thể chuyển sang trạng thái khác.');
+            }
+
+            $this->execute(
+                'UPDATE orders SET status = :status WHERE id = :id',
+                ['status' => $status, 'id' => (int) $orderId]
+            );
+
+            if ($status === 'completed') {
+                $this->execute(
+                    "UPDATE payments SET status = 'paid', paid_at = NOW()
+                     WHERE order_id = :id AND status IN ('pending', 'failed')",
+                    ['id' => (int) $orderId]
+                );
+            }
+
+            if ($status === 'cancelled') {
+                $details = $this->execute(
+                    'SELECT product_id, quantity FROM order_details
+                     WHERE order_id = :id AND product_id IS NOT NULL',
+                    ['id' => (int) $orderId]
+                )->fetchAll();
+
+                foreach ($details as $detail) {
+                    $this->execute(
+                        'UPDATE products
+                         SET stock_quantity = stock_quantity + :increase,
+                             sold_quantity = GREATEST(sold_quantity - :decrease, 0)
+                         WHERE id = :id',
+                        [
+                            'increase' => (int) $detail['quantity'],
+                            'decrease' => (int) $detail['quantity'],
+                            'id' => (int) $detail['product_id'],
+                        ]
+                    );
+                }
+
+                $this->execute(
+                    "UPDATE payments SET status = IF(status = 'paid', 'refunded', 'failed')
+                     WHERE order_id = :id",
+                    ['id' => (int) $orderId]
+                );
+            }
+
+            $this->pdo->commit();
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();

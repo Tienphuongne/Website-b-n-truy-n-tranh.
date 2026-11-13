@@ -3,7 +3,6 @@
     <?php if (empty($databaseError)): ?>
         <form method="post" enctype="multipart/form-data" action="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/' . ($_GET['task'] ?? '') . (isset($_GET['id']) ? '?id=' . (int) $_GET['id'] : ''))) ?>" class="admin-data-form">
             <?= csrf_field() ?>
-            <?php $selectedGenres = array_map('intval', $record['_genre_ids'] ?? []); ?>
             <?php foreach (($definition['fields'] ?? []) as $field): ?>
                 <?php $value = $record[$field['name']] ?? ''; ?>
                 <?php if ($field['type'] === 'checkbox'): ?>
@@ -17,17 +16,17 @@
                         <option value="">Không chọn</option>
                         <?php foreach (($formOptions[$field['table']] ?? []) as $option): ?><option value="<?= (int) $option['id'] ?>" <?= (string) $value === (string) $option['id'] ? 'selected' : '' ?>><?= e($option['name']) ?></option><?php endforeach; ?>
                     </select>
+                <?php elseif ($field['type'] === 'genres'): ?>
+                    <label class="form-label"><?= e($field['label']) ?></label>
+                    <?php $selectedGenres = array_map('intval', (array) $value); ?>
+                    <div class="d-flex flex-wrap gap-3 mb-3">
+                        <?php foreach (($formOptions[$field['table']] ?? []) as $option): ?><label class="form-check admin-checkbox"><input class="form-check-input" type="checkbox" name="<?= e($field['name']) ?>[]" value="<?= (int) $option['id'] ?>" <?= in_array((int) $option['id'], $selectedGenres, true) ? 'checked' : '' ?>><span class="form-check-label"><?= e($option['name']) ?></span></label><?php endforeach; ?>
+                    </div>
                 <?php elseif ($field['type'] === 'select'): ?>
                     <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
                     <select class="form-select mb-3" id="field-<?= e($field['name']) ?>" name="<?= e($field['name']) ?>" required>
                         <?php foreach ($field['options'] as $option => $label): ?><option value="<?= e($option) ?>" <?= (string) $value === (string) $option ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?>
                     </select>
-                <?php elseif ($field['type'] === 'multiselect'): ?>
-                    <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
-                    <select class="form-select mb-3" id="field-<?= e($field['name']) ?>" name="<?= e($field['name']) ?>[]" multiple size="6">
-                        <?php foreach (($formOptions[$field['options_table']] ?? []) as $option): ?><option value="<?= (int) $option['id'] ?>" <?= in_array((int) $option['id'], $selectedGenres, true) ? 'selected' : '' ?>><?= e($option['name']) ?></option><?php endforeach; ?>
-                    </select>
-                    <p class="admin-field-hint">Giữ Ctrl (Windows) hoặc Command (macOS) để chọn nhiều thể loại.</p>
                 <?php elseif ($field['type'] === 'images'): ?>
                     <?php if (!empty($record['_images'])): ?>
                         <label class="form-label"><?= e($field['label']) ?></label>

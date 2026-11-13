@@ -1,8 +1,8 @@
 <?php $cartCount = array_sum(array_map('intval', $_SESSION['cart'] ?? [])); ?>
 <header class="site-header">
     <div class="container header-main">
-        <a class="brand" href="<?= e(url('')) ?>" aria-label="Truyện Thú Vị - trang chủ">
-            <span class="brand-mark">M</span><span>Truyện Thú Vị</span>
+        <a class="brand" href="<?= e(url('')) ?>" aria-label="TruyenThuVi - trang chủ">
+            <img class="brand-mark" src="<?= e(PATH_ASSETS . 'images/logo-mark.svg') ?>" alt="" width="38" height="38"><span>Truyen<span class="brand-accent">ThuVi</span></span>
         </a>
         <form class="header-search" action="<?= e(url('products')) ?>" method="get" role="search">
             <label class="visually-hidden" for="site-search">Tìm truyện tranh</label>

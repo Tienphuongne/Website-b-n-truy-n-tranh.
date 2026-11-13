@@ -2,7 +2,7 @@
     <div class="editorial-hero">
         <span class="eyebrow">CÂU CHUYỆN CỦA CHÚNG TÔI</span>
         <h1>Mỗi trang truyện<br><span>mở ra một thế giới.</span></h1>
-        <p>Manga House được tạo nên từ tình yêu với những câu chuyện — nơi độc giả tìm thấy tác phẩm yêu thích và tác giả được kết nối với cộng đồng.</p>
+        <p>TruyenThuVi được tạo nên từ tình yêu với những câu chuyện — nơi độc giả tìm thấy tác phẩm yêu thích và tác giả được kết nối với cộng đồng.</p>
     </div>
     <div class="values-grid">
         <article class="value-card"><span>01</span><h2>Sứ mệnh</h2><p>Mang những bộ truyện chất lượng đến gần hơn với độc giả, với trải nghiệm mua sắm dễ dàng và thân thiện.</p></article>

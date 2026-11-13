@@ -1,9 +1,9 @@
 <article class="product-card">
     <a class="product-cover" href="<?= e(url('product/detail/' . (int) $product['id'])) ?>">
         <?php if (!empty($product['cover_image'])): ?>
-            <img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($product['cover_image'], '/\\')) ?>" alt="Bìa truyện <?= e($product['name']) ?>" loading="lazy">
+            <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>" loading="lazy">
         <?php else: ?>
-            <span class="cover-placeholder"><span>✦</span><small>MANGA HOUSE</small></span>
+            <span class="cover-placeholder"><span>✦</span><small>TRUYENTHUVI</small></span>
         <?php endif; ?>
         <?php if (!empty($product['is_featured'])): ?><span class="product-badge">Nổi bật</span><?php endif; ?>
         <?php if (!empty($product['original_price']) && $product['original_price'] > $product['sale_price']): ?>

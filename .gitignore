@@ -1,0 +1,18 @@
+# Thư mục dữ liệu MySQL local (không đưa lên Git)
+/database/mysql-8/
+
+# Biến môi trường / thông tin nhạy cảm
+.env
+.env.*
+!.env.example
+
+# Hệ điều hành & trình soạn thảo
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+
+# File tạm
+*.tmp
+*.bak

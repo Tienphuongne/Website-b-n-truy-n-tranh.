@@ -7,7 +7,7 @@
                 <?php foreach ($items as $item): ?>
                     <article class="cart-item">
                         <a class="cart-thumb" href="<?= e(url('product/detail/' . (int) $item['id'])) ?>">
-                            <?php if (!empty($item['cover_image'])): ?><img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($item['cover_image'], '/\\')) ?>" alt="<?= e($item['name']) ?>">
+                            <?php if (!empty($item['cover_image'])): ?><img src="<?= e(product_image_url($item['cover_image'])) ?>" alt="<?= e($item['name']) ?>">
                             <?php else: ?><span class="cover-placeholder"><span>✦</span></span><?php endif; ?>
                         </a>
                         <div class="cart-item-info">
