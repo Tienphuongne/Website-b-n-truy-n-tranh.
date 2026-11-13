@@ -12,6 +12,13 @@
     </a>
     <div class="product-info">
         <p class="product-author"><?= e($product['author_name'] ?? 'Đang cập nhật tác giả') ?></p>
+        <?php if (!empty($product['review_count'])): ?>
+            <?php $cardRating = (int) round((float) $product['avg_rating']); ?>
+            <div class="product-rating">
+                <span class="rating-stars" aria-hidden="true"><?= str_repeat('★', $cardRating) ?><?= str_repeat('☆', 5 - $cardRating) ?></span>
+                <small>(<?= (int) $product['review_count'] ?>)</small>
+            </div>
+        <?php endif; ?>
         <h3><a href="<?= e(url('product/detail/' . (int) $product['id'])) ?>"><?= e($product['name']) ?></a></h3>
         <div class="product-prices">
             <strong><?= number_format((float) $product['sale_price'], 0, ',', '.') ?>₫</strong>

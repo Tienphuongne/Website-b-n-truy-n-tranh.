@@ -32,15 +32,15 @@ class ProductModel extends BaseModel
         $limit = max(1, min(24, (int) $limit));
 
         return $this->execute(
-            "SELECT p.*, a.name AS author_name, r.review_count
+            "SELECT p.*, a.name AS author_name, r.review_count, r.avg_rating
              FROM products p
              LEFT JOIN authors a ON a.id = p.author_id
              INNER JOIN (
-                 SELECT product_id, COUNT(*) AS review_count
+                 SELECT product_id, COUNT(*) AS review_count, AVG(rating) AS avg_rating
                  FROM reviews WHERE status = 'approved' GROUP BY product_id
              ) r ON r.product_id = p.id
              WHERE p.status = 'active'
-             ORDER BY review_count DESC, p.sold_quantity DESC
+             ORDER BY review_count DESC, avg_rating DESC, p.sold_quantity DESC, p.id DESC
              LIMIT $limit"
         )->fetchAll();
     }
@@ -51,8 +51,17 @@ class ProductModel extends BaseModel
         $params = [];
 
         if (!empty($filters['q'])) {
-            $conditions[] = 'p.name LIKE :search';
-            $params['search'] = '%' . $filters['q'] . '%';
+            $search = '%' . $filters['q'] . '%';
+            $conditions[] = '(p.name LIKE :search_name
+                OR p.short_description LIKE :search_description
+                OR p.description LIKE :search_long_description
+                OR EXISTS (SELECT 1 FROM authors sa WHERE sa.id = p.author_id AND sa.name LIKE :search_author)
+                OR EXISTS (SELECT 1 FROM publishers sp WHERE sp.id = p.publisher_id AND sp.name LIKE :search_publisher))';
+            $params['search_name'] = $search;
+            $params['search_description'] = $search;
+            $params['search_long_description'] = $search;
+            $params['search_author'] = $search;
+            $params['search_publisher'] = $search;
         }
         if (!empty($filters['category'])) {
             $conditions[] = 'p.category_id = :category';
@@ -79,10 +88,11 @@ class ProductModel extends BaseModel
         }
 
         $sortOptions = [
-            'price_asc' => 'p.sale_price ASC',
-            'price_desc' => 'p.sale_price DESC',
-            'best_selling' => 'p.sold_quantity DESC',
-            'newest' => 'p.created_at DESC',
+            'price_asc' => 'p.sale_price ASC, p.id DESC',
+            'price_desc' => 'p.sale_price DESC, p.id DESC',
+            'best_selling' => 'p.sold_quantity DESC, p.id DESC',
+            'rating' => 'COALESCE(rs.avg_rating, 0) DESC, COALESCE(rs.review_count, 0) DESC, p.id DESC',
+            'newest' => 'p.created_at DESC, p.id DESC',
         ];
         $orderBy = $sortOptions[$filters['sort'] ?? 'newest'] ?? $sortOptions['newest'];
         $where = implode(' AND ', $conditions);
@@ -95,10 +105,16 @@ class ProductModel extends BaseModel
         $perPage = max(1, min(48, (int) $perPage));
         $offset = ($page - 1) * $perPage;
         $items = $this->execute(
-            "SELECT p.*, c.name AS category_name, a.name AS author_name
+            "SELECT p.*, c.name AS category_name, a.name AS author_name,
+                    COALESCE(rs.avg_rating, 0) AS avg_rating,
+                    COALESCE(rs.review_count, 0) AS review_count
              FROM products p
              LEFT JOIN categories c ON c.id = p.category_id
              LEFT JOIN authors a ON a.id = p.author_id
+             LEFT JOIN (
+                 SELECT product_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                 FROM reviews WHERE status = 'approved' GROUP BY product_id
+             ) rs ON rs.product_id = p.id
              WHERE $where
              ORDER BY $orderBy
              LIMIT $perPage OFFSET $offset",
@@ -116,7 +132,11 @@ class ProductModel extends BaseModel
     public function find($id)
     {
         return $this->execute(
-            "SELECT p.*, c.name AS category_name, a.name AS author_name, pub.name AS publisher_name
+            "SELECT p.*, c.name AS category_name, a.name AS author_name, pub.name AS publisher_name,
+                    (SELECT AVG(r.rating) FROM reviews r
+                     WHERE r.product_id = p.id AND r.status = 'approved') AS avg_rating,
+                    (SELECT COUNT(*) FROM reviews r
+                     WHERE r.product_id = p.id AND r.status = 'approved') AS review_count
              FROM products p
              LEFT JOIN categories c ON c.id = p.category_id
              LEFT JOIN authors a ON a.id = p.author_id
@@ -130,11 +150,11 @@ class ProductModel extends BaseModel
     public function getGenres($productId)
     {
         return $this->execute(
-            'SELECT g.name FROM genres g
+            'SELECT g.id, g.name FROM genres g
              INNER JOIN product_genres pg ON pg.genre_id = g.id
              WHERE pg.product_id = :product_id ORDER BY g.name',
             ['product_id' => (int) $productId]
-        )->fetchAll(PDO::FETCH_COLUMN);
+        )->fetchAll();
     }
 
     public function getImages($productId)
@@ -145,19 +165,52 @@ class ProductModel extends BaseModel
         )->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    public function getRelated($productId, $categoryId, $limit = 4)
+    public function getRelated($productId, $categoryId, $authorId = null, $limit = 4)
     {
-        if (!(int) $categoryId) {
-            return [];
-        }
         $limit = max(1, min(12, (int) $limit));
+        $params = ['product_id' => (int) $productId];
+        $matches = [];
+        $order = [];
+
+        if ((int) $categoryId) {
+            $matches[] = 'p.category_id = :category_id';
+            $params['category_id'] = (int) $categoryId;
+            $order[] = '(p.category_id = :order_category_id) DESC';
+            $params['order_category_id'] = (int) $categoryId;
+        }
+        if ((int) $authorId) {
+            $matches[] = 'p.author_id = :author_id';
+            $params['author_id'] = (int) $authorId;
+            $order[] = '(p.author_id = :order_author_id) DESC';
+            $params['order_author_id'] = (int) $authorId;
+        }
+
+        $matches[] = 'EXISTS (
+            SELECT 1 FROM product_genres pg
+            WHERE pg.product_id = p.id
+              AND pg.genre_id IN (SELECT genre_id FROM product_genres WHERE product_id = :genre_product_id)
+        )';
+        $params['genre_product_id'] = (int) $productId;
+        $order[] = 'p.is_featured DESC';
+        $order[] = 'p.sold_quantity DESC';
+        $order[] = 'p.created_at DESC';
+        $order[] = 'p.id DESC';
 
         return $this->execute(
-            "SELECT p.*, a.name AS author_name FROM products p
+            "SELECT p.*, a.name AS author_name,
+                    COALESCE(rs.avg_rating, 0) AS avg_rating,
+                    COALESCE(rs.review_count, 0) AS review_count
+             FROM products p
              LEFT JOIN authors a ON a.id = p.author_id
-             WHERE p.status = 'active' AND p.category_id = :category_id AND p.id <> :product_id
-             ORDER BY p.is_featured DESC, p.sold_quantity DESC LIMIT $limit",
-            ['category_id' => (int) $categoryId, 'product_id' => (int) $productId]
+             LEFT JOIN (
+                 SELECT product_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                 FROM reviews WHERE status = 'approved' GROUP BY product_id
+             ) rs ON rs.product_id = p.id
+             WHERE p.status = 'active' AND p.id <> :product_id
+               AND (" . implode(' OR ', $matches) . ')
+             ORDER BY ' . implode(', ', $order) . "
+             LIMIT $limit",
+            $params
         )->fetchAll();
     }
 
@@ -203,11 +256,17 @@ class ProductModel extends BaseModel
         $limit = max(1, min(24, (int) $limit));
 
         return $this->execute(
-            "SELECT p.*, a.name AS author_name
+            "SELECT p.*, a.name AS author_name,
+                    COALESCE(rs.avg_rating, 0) AS avg_rating,
+                    COALESCE(rs.review_count, 0) AS review_count
              FROM products p
              LEFT JOIN authors a ON a.id = p.author_id
+             LEFT JOIN (
+                 SELECT product_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+                 FROM reviews WHERE status = 'approved' GROUP BY product_id
+             ) rs ON rs.product_id = p.id
              WHERE p.status = 'active' AND $condition
-             ORDER BY $orderBy
+             ORDER BY $orderBy, p.id DESC
              LIMIT $limit",
             $params
         )->fetchAll();

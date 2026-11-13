@@ -35,6 +35,12 @@ Các URL thân thiện như `/products`, `/product/detail/1`, `/cart`, `/checkou
 
 Trang admin được bảo vệ bằng role `admin`. Các form POST dùng CSRF token; mật khẩu được lưu bằng `password_hash()`. Thanh toán hiện hỗ trợ COD và chuyển khoản thủ công, chưa tích hợp cổng thanh toán.
 
+Các chức năng cửa hàng chính:
+
+- Tìm kiếm theo tên truyện, tác giả, nhà xuất bản hoặc mô tả; lọc theo danh mục, thể loại, tác giả, khoảng giá và tình trạng còn hàng.
+- Sắp xếp theo mới nhất, bán chạy, đánh giá cao hoặc giá; phân trang và hiển thị chip bộ lọc đang áp dụng.
+- Trang chi tiết liên kết tới danh mục/tác giả/thể loại, hiển thị điểm đánh giá và gợi ý truyện liên quan theo danh mục, tác giả hoặc thể loại.
+
 Các chức năng quản trị chính:
 
 - Sản phẩm: thêm/sửa/xóa, tải ảnh bìa, chọn nhiều thể loại và quản lý thư viện ảnh.

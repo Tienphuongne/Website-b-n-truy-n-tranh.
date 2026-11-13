@@ -1,6 +1,6 @@
 <section class="container section-space">
     <?php if ($product): ?>
-        <nav class="breadcrumb-line"><a href="<?= e(url('')) ?>">Trang chủ</a><span>/</span><a href="<?= e(url('products')) ?>">Truyện tranh</a><span>/</span><span><?= e($product['name']) ?></span></nav>
+        <nav class="breadcrumb-line"><a href="<?= e(url('')) ?>">Trang chủ</a><span>/</span><a href="<?= e(url('products')) ?>">Truyện tranh</a><?php if (!empty($product['category_id'])): ?><span>/</span><a href="<?= e(url('products?category=' . (int) $product['category_id'])) ?>"><?= e($product['category_name'] ?? 'Danh mục') ?></a><?php endif; ?><span>/</span><span><?= e($product['name']) ?></span></nav>
         <div class="detail-layout">
             <div class="detail-cover">
                 <?php if (!empty($product['cover_image'])): ?>
@@ -10,9 +10,28 @@
                 <?php endif; ?>
             </div>
             <div class="detail-info">
-                <span class="eyebrow"><?= e($product['category_name'] ?? 'TRUYỆN TRANH') ?></span>
+                <?php if (!empty($product['category_id'])): ?>
+                    <a class="eyebrow" href="<?= e(url('products?category=' . (int) $product['category_id'])) ?>"><?= e($product['category_name'] ?? 'TRUYỆN TRANH') ?></a>
+                <?php else: ?>
+                    <span class="eyebrow">TRUYỆN TRANH</span>
+                <?php endif; ?>
                 <h1><?= e($product['name']) ?></h1>
-                <p class="detail-byline">Tác giả: <strong><?= e($product['author_name'] ?? 'Đang cập nhật') ?></strong></p>
+                <p class="detail-byline">Tác giả:
+                    <?php if (!empty($product['author_id'])): ?>
+                        <a href="<?= e(url('products?author=' . (int) $product['author_id'])) ?>"><strong><?= e($product['author_name'] ?? 'Đang cập nhật') ?></strong></a>
+                    <?php else: ?>
+                        <strong><?= e($product['author_name'] ?? 'Đang cập nhật') ?></strong>
+                    <?php endif; ?>
+                </p>
+                <?php $averageRating = (float) ($product['avg_rating'] ?? 0); $reviewCount = (int) ($product['review_count'] ?? 0); $roundedRating = (int) round($averageRating); ?>
+                <div class="rating-summary">
+                    <?php if ($reviewCount > 0): ?>
+                        <span class="rating-stars" aria-label="<?= e(number_format($averageRating, 1, ',', '.')) ?> trên 5 sao"><?= str_repeat('★', $roundedRating) ?><?= str_repeat('☆', 5 - $roundedRating) ?></span>
+                        <span><?= e(number_format($averageRating, 1, ',', '.')) ?>/5 · <?= $reviewCount ?> đánh giá</span>
+                    <?php else: ?>
+                        <span>Chưa có đánh giá</span>
+                    <?php endif; ?>
+                </div>
                 <div class="detail-price"><strong><?= number_format((float) $product['sale_price'], 0, ',', '.') ?>₫</strong>
                     <?php if (!empty($product['original_price']) && $product['original_price'] > $product['sale_price']): ?><del><?= number_format((float) $product['original_price'], 0, ',', '.') ?>₫</del><?php endif; ?>
                 </div>
@@ -22,7 +41,7 @@
                 <p class="detail-description"><?= nl2br(e($product['short_description'] ?? 'Thông tin nội dung truyện đang được cập nhật.')) ?></p>
                 <div class="detail-facts">
                     <div><span>Nhà xuất bản</span><strong><?= e($product['publisher_name'] ?? 'Đang cập nhật') ?></strong></div>
-                    <div><span>Thể loại</span><strong><?= e($genres ? implode(', ', $genres) : 'Đang cập nhật') ?></strong></div>
+                    <div><span>Thể loại</span><strong class="genre-links"><?php if ($genres): ?><?php foreach ($genres as $genre): ?><a href="<?= e(url('products?genre=' . (int) $genre['id'])) ?>"><?= e($genre['name']) ?></a><?php endforeach; ?><?php else: ?>Đang cập nhật<?php endif; ?></strong></div>
                     <div><span>Mã truyện</span><strong>#<?= (int) $product['id'] ?></strong></div>
                 </div>
                 <form action="<?= e(url('cart/add')) ?>" method="post" class="detail-actions">
@@ -61,7 +80,7 @@
         </section>
         <?php if ($related): ?>
             <section class="related-section">
-                <div class="section-heading"><div><span class="eyebrow">CÓ THỂ BẠN SẼ THÍCH</span><h2>Truyện cùng danh mục</h2></div></div>
+                <div class="section-heading"><div><span class="eyebrow">CÓ THỂ BẠN SẼ THÍCH</span><h2>Truyện liên quan</h2><p>Cùng danh mục, tác giả hoặc thể loại với truyện bạn đang xem.</p></div></div>
                 <div class="product-grid"><?php foreach ($related as $product): require PATH_VIEW . 'components/product-card.php'; endforeach; ?></div>
             </section>
         <?php endif; ?>
