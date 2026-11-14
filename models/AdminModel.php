@@ -23,7 +23,7 @@ class AdminModel extends BaseModel
                 ['name' => 'sale_price', 'label' => 'Giá bán', 'type' => 'number', 'required' => true],
                 ['name' => 'original_price', 'label' => 'Giá gốc', 'type' => 'number'],
                 ['name' => 'stock_quantity', 'label' => 'Tồn kho', 'type' => 'number', 'required' => true],
-                ['name' => 'sold_quantity', 'label' => 'Đã bán', 'type' => 'number'],
+                ['name' => 'sold_quantity', 'label' => 'Đã bán', 'type' => 'number', 'default' => 0],
                 ['name' => 'is_featured', 'label' => 'Sản phẩm nổi bật', 'type' => 'checkbox'],
                 ['name' => 'status', 'label' => 'Trạng thái', 'type' => 'select', 'options' => ['active' => 'Đang bán', 'draft' => 'Bản nháp', 'archived' => 'Lưu trữ']],
             ],
@@ -86,7 +86,7 @@ class AdminModel extends BaseModel
                 ['name' => 'code', 'label' => 'Mã giảm giá', 'type' => 'text', 'required' => true],
                 ['name' => 'discount_type', 'label' => 'Kiểu giảm giá', 'type' => 'select', 'options' => ['fixed' => 'Số tiền cố định', 'percent' => 'Phần trăm']],
                 ['name' => 'discount_value', 'label' => 'Giá trị giảm', 'type' => 'number', 'required' => true],
-                ['name' => 'minimum_order', 'label' => 'Giá trị đơn tối thiểu', 'type' => 'number'],
+                ['name' => 'minimum_order', 'label' => 'Giá trị đơn tối thiểu', 'type' => 'number', 'default' => 0],
                 ['name' => 'starts_at', 'label' => 'Bắt đầu', 'type' => 'datetime-local'],
                 ['name' => 'ends_at', 'label' => 'Kết thúc', 'type' => 'datetime-local'],
                 ['name' => 'usage_limit', 'label' => 'Giới hạn lượt dùng', 'type' => 'number'],
@@ -409,7 +409,7 @@ class AdminModel extends BaseModel
                 $value = $value === '' ? null : str_replace('T', ' ', $value) . ':00';
             }
             if ($field['type'] === 'number' && $value === '') {
-                $value = null;
+                $value = array_key_exists('default', $field) ? $field['default'] : null;
             }
             if ($field['type'] === 'foreign') {
                 if ($value === '') {

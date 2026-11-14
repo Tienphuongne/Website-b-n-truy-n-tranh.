@@ -135,18 +135,25 @@ class AdminController extends BaseController
             }
 
             $resource = $model->getResource($key);
-        } catch (PDOException | RuntimeException $exception) {
-            error_log($exception->getMessage());
-            $databaseError = 'Chưa thể tải dữ liệu quản trị.';
         } catch (DomainException $exception) {
             flash('danger', $exception->getMessage());
-            $target = 'admin/' . $key;
-            if ($task === 'edit') {
-                $target .= '/edit?id=' . (int) $id;
-            } elseif ($task === 'create') {
-                $target .= '/create';
+            redirect($this->formTarget($key, $task, $id));
+        } catch (PDOException $exception) {
+            error_log($exception->getMessage());
+            $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+            $isFormSubmission = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+                && in_array($task, ['create', 'edit'], true);
+            if ($isFormSubmission && in_array($sqlState, ['23000', '22001'], true)) {
+                flash(
+                    'danger',
+                    'Không thể lưu dữ liệu: thông tin bị trùng hoặc vượt quá độ dài cho phép.'
+                );
+                redirect($this->formTarget($key, $task, $id));
             }
-            redirect($target);
+            $databaseError = 'Chưa thể tải dữ liệu quản trị.';
+        } catch (RuntimeException $exception) {
+            error_log($exception->getMessage());
+            $databaseError = 'Chưa thể tải dữ liệu quản trị.';
         }
 
         if (!$resource && !$databaseError) {
@@ -164,5 +171,17 @@ class AdminController extends BaseController
         $date = DateTime::createFromFormat('Y-m-d', $value);
 
         return $date && $date->format('Y-m-d') === $value ? $value : $fallback;
+    }
+
+    private function formTarget($key, $task, $id)
+    {
+        $target = 'admin/' . $key;
+        if ($task === 'edit') {
+            $target .= '/edit?id=' . (int) $id;
+        } elseif ($task === 'create') {
+            $target .= '/create';
+        }
+
+        return $target;
     }
 }

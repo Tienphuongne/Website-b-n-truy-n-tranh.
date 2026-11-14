@@ -120,6 +120,23 @@ if (!function_exists('request_string')) {
     }
 }
 
+if (!function_exists('limit_text')) {
+    /**
+     * Cắt chuỗi theo số ký tự (không cắt giữa một ký tự UTF-8).
+     */
+    function limit_text($value, $maxLength)
+    {
+        $value = (string) $value;
+        $maxLength = max(0, (int) $maxLength);
+
+        if (function_exists('mb_substr')) {
+            return mb_substr($value, 0, $maxLength, 'UTF-8');
+        }
+
+        return substr($value, 0, $maxLength);
+    }
+}
+
 if (!function_exists('url')) {
     function url($path = '')
     {

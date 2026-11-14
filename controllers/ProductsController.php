@@ -5,7 +5,7 @@ class ProductsController extends BaseController
     public function index()
     {
         $filters = [
-            'q' => trim(substr(request_string($_GET, 'q'), 0, 100)),
+            'q' => limit_text(trim(request_string($_GET, 'q')), 100),
             'category' => filter_input(INPUT_GET, 'category', FILTER_VALIDATE_INT) ?: '',
             'genre' => filter_input(INPUT_GET, 'genre', FILTER_VALIDATE_INT) ?: '',
             'author' => filter_input(INPUT_GET, 'author', FILTER_VALIDATE_INT) ?: '',

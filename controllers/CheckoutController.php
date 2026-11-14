@@ -17,6 +17,10 @@ class CheckoutController extends BaseController
             if (isset($_POST['apply_coupon'])) {
                 try {
                     $cartItems = $this->loadCart();
+                    if (!$cartItems) {
+                        flash('warning', 'Giỏ hàng đang trống, chưa thể áp dụng mã giảm giá.');
+                        redirect('cart');
+                    }
                     $subtotal = $this->subtotal($cartItems);
                     $coupon = (new CouponModel())->findValidByCode(
                         request_string($_POST, 'coupon'),

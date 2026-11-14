@@ -33,7 +33,7 @@
                         <div class="admin-thumb-grid mb-3">
                             <?php foreach ($record['_images'] as $image): ?>
                                 <label class="admin-thumb">
-                                    <img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($image['image_path'], '/\\')) ?>" alt="Ảnh sản phẩm">
+                                    <img src="<?= e(product_image_url($image['image_path'])) ?>" alt="Ảnh sản phẩm">
                                     <span><input type="checkbox" name="remove_images[]" value="<?= (int) $image['id'] ?>"> Xóa ảnh này</span>
                                 </label>
                             <?php endforeach; ?>
@@ -42,7 +42,7 @@
                 <?php elseif ($field['type'] === 'file' || $field['type'] === 'file-multiple'): ?>
                     <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
                     <?php if ($field['type'] === 'file' && !empty($record[$field['column'] ?? ''])): ?>
-                        <div class="admin-cover-preview"><img src="<?= e(BASE_ASSETS_UPLOADS . ltrim($record[$field['column']], '/\\')) ?>" alt="Ảnh hiện tại"></div>
+                        <div class="admin-cover-preview"><img src="<?= e(product_image_url($record[$field['column']])) ?>" alt="Ảnh hiện tại"></div>
                     <?php endif; ?>
                     <input class="form-control mb-3" id="field-<?= e($field['name']) ?>" type="file" name="<?= e($field['name']) ?><?= $field['type'] === 'file-multiple' ? '[]' : '' ?>" accept="<?= e($field['accept'] ?? 'image/*') ?>" <?= $field['type'] === 'file-multiple' ? 'multiple' : '' ?>>
                 <?php else: ?>

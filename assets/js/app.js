@@ -18,11 +18,23 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('form').forEach(function (form) {
         form.addEventListener('submit', function (event) {
             if (event.defaultPrevented) return;
+            // Tránh gửi trùng nhưng không vô hiệu hóa nút submit: nút có name/value
+            // (ví dụ "Mua ngay" hoặc "Áp dụng mã") vẫn phải được gửi kèm form.
+            if (form.dataset.submitting === '1') {
+                event.preventDefault();
+                return;
+            }
             var button = event.submitter || form.querySelector('button[type="submit"]');
             if (!button || (!button.formNoValidate && !form.checkValidity())) return;
+            form.dataset.submitting = '1';
             button.dataset.originalText = button.textContent;
-            button.disabled = true;
             button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Đang xử lý';
+        });
+    });
+
+    window.addEventListener('pageshow', function () {
+        document.querySelectorAll('form[data-submitting]').forEach(function (form) {
+            delete form.dataset.submitting;
         });
     });
 

@@ -133,7 +133,7 @@ class OrderModel extends BaseModel
 
         try {
             $order = $this->execute(
-                'SELECT id, status FROM orders WHERE id = :id FOR UPDATE',
+                'SELECT id, status, coupon_id FROM orders WHERE id = :id FOR UPDATE',
                 ['id' => (int) $orderId]
             )->fetch();
 
@@ -188,6 +188,13 @@ class OrderModel extends BaseModel
                      WHERE order_id = :id",
                     ['id' => (int) $orderId]
                 );
+
+                if (!empty($order['coupon_id'])) {
+                    $this->execute(
+                        'UPDATE coupons SET used_count = GREATEST(used_count - 1, 0) WHERE id = :id',
+                        ['id' => (int) $order['coupon_id']]
+                    );
+                }
             }
 
             $this->pdo->commit();
