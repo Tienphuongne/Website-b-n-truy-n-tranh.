@@ -129,6 +129,32 @@ class ProductModel extends BaseModel
         ];
     }
 
+    public function suggest($keyword, $limit = 8)
+    {
+        $keyword = trim((string) $keyword);
+        if ($keyword === '') {
+            return [];
+        }
+
+        $limit = max(1, min(10, (int) $limit));
+        $search = '%' . $keyword . '%';
+
+        return $this->execute(
+            "SELECT p.id, p.name, p.sale_price, p.cover_image, a.name AS author_name
+             FROM products p
+             LEFT JOIN authors a ON a.id = p.author_id
+             WHERE p.status = 'active'
+               AND (p.name LIKE :search OR a.name LIKE :author)
+             ORDER BY (p.name LIKE :prefix) DESC, p.sold_quantity DESC, p.id DESC
+             LIMIT $limit",
+            [
+                'search' => $search,
+                'author' => $search,
+                'prefix' => $keyword . '%',
+            ]
+        )->fetchAll();
+    }
+
     public function find($id)
     {
         return $this->execute(

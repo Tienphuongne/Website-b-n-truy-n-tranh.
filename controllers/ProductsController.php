@@ -54,6 +54,7 @@ class ProductsController extends BaseController
         $images = [];
         $reviews = [];
         $related = [];
+        $inWishlist = false;
         $databaseError = null;
 
         try {
@@ -65,6 +66,9 @@ class ProductsController extends BaseController
                     $images = $model->getImages($id);
                     $related = $model->getRelated($id, $product['category_id'], $product['author_id']);
                     $reviews = (new ReviewModel())->getApprovedForProduct($id);
+                    if (!empty($_SESSION['user']['id'])) {
+                        $inWishlist = (new WishlistModel())->exists((int) $_SESSION['user']['id'], $id);
+                    }
                 }
             }
         } catch (PDOException | RuntimeException $exception) {
@@ -79,6 +83,32 @@ class ProductsController extends BaseController
         $title = $product ? $product['name'] : 'Không tìm thấy truyện';
         $view = 'products/detail';
         require PATH_VIEW . 'main.php';
+    }
+
+    public function suggest()
+    {
+        $keyword = limit_text(trim(request_string($_GET, 'q')), 100);
+        $items = [];
+
+        if ($keyword !== '') {
+            try {
+                foreach ((new ProductModel())->suggest($keyword, 8) as $row) {
+                    $items[] = [
+                        'id' => (int) $row['id'],
+                        'name' => $row['name'],
+                        'author' => $row['author_name'] ?? '',
+                        'price' => (float) $row['sale_price'],
+                        'url' => url('product/detail/' . (int) $row['id']),
+                    ];
+                }
+            } catch (PDOException | RuntimeException $exception) {
+                error_log($exception->getMessage());
+            }
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['items' => $items], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     private function activeFilters(array $filters, array $categories, array $genres, array $authors)

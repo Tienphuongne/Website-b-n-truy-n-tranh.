@@ -27,6 +27,54 @@ class UserModel extends BaseModel
         return (int) $this->pdo->lastInsertId();
     }
 
+    public function findByEmail($email)
+    {
+        return $this->execute(
+            'SELECT * FROM users WHERE email = :email LIMIT 1',
+            ['email' => $email]
+        )->fetch();
+    }
+
+    public function createPasswordReset($userId)
+    {
+        $token = bin2hex(random_bytes(32));
+
+        $this->execute(
+            'DELETE FROM password_resets WHERE user_id = :user_id OR expires_at < NOW()',
+            ['user_id' => (int) $userId]
+        );
+        $this->execute(
+            'INSERT INTO password_resets (user_id, token_hash, expires_at, created_at)
+             VALUES (:user_id, :token_hash, DATE_ADD(NOW(), INTERVAL 1 HOUR), NOW())',
+            [
+                'user_id' => (int) $userId,
+                'token_hash' => hash('sha256', $token),
+            ]
+        );
+
+        return $token;
+    }
+
+    public function findPasswordReset($token)
+    {
+        return $this->execute(
+            'SELECT pr.id, pr.user_id, u.full_name, u.email
+             FROM password_resets pr
+             INNER JOIN users u ON u.id = pr.user_id
+             WHERE pr.token_hash = :token_hash AND pr.expires_at > NOW()
+             LIMIT 1',
+            ['token_hash' => hash('sha256', (string) $token)]
+        )->fetch();
+    }
+
+    public function deletePasswordResets($userId)
+    {
+        $this->execute(
+            'DELETE FROM password_resets WHERE user_id = :user_id',
+            ['user_id' => (int) $userId]
+        );
+    }
+
     public function emailExists($email)
     {
         return (bool) $this->execute(

@@ -52,6 +52,14 @@
                     <button class="btn btn-primary" type="submit" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>Thêm vào giỏ hàng</button>
                     <button class="btn btn-outline-primary" type="submit" name="buy_now" value="1" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>Mua ngay</button>
                 </form>
+                <?php if (!empty($_SESSION['user'])): ?>
+                    <form class="detail-wishlist" action="<?= e(url('wishlist/toggle')) ?>" method="post">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                        <input type="hidden" name="redirect" value="product/detail/<?= (int) $product['id'] ?>">
+                        <button class="btn btn-outline-secondary" type="submit"><?= $inWishlist ? '♥ Đã yêu thích' : '♡ Thêm vào yêu thích' ?></button>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
         <section class="detail-description-panel">

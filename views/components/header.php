@@ -6,14 +6,16 @@
         </a>
         <form class="header-search" action="<?= e(url('products')) ?>" method="get" role="search">
             <label class="visually-hidden" for="site-search">Tìm truyện tranh</label>
-            <input id="site-search" type="search" name="q" placeholder="Tìm tên truyện, tác giả..." value="<?= e($_GET['q'] ?? '') ?>">
+            <input id="site-search" type="search" name="q" placeholder="Tìm tên truyện, tác giả..." value="<?= e($_GET['q'] ?? '') ?>" autocomplete="off" data-search-suggest data-suggest-url="<?= e(url('products/suggest')) ?>">
             <button type="submit" aria-label="Tìm kiếm">⌕</button>
+            <div class="search-suggest" data-search-suggest-results hidden></div>
         </form>
         <div class="header-actions">
             <?php if (($_SESSION['user']['role'] ?? '') === 'admin'): ?>
                 <a class="account-link" href="<?= e(url('admin')) ?>"><span>Quản trị</span></a>
             <?php endif; ?>
             <?php if (!empty($_SESSION['user'])): ?>
+                <a class="account-link" href="<?= e(url('wishlist')) ?>"><span class="header-icon">♥</span><span>Yêu thích</span></a>
                 <a class="account-link" href="<?= e(url('account')) ?>"><span class="header-icon">♙</span><span><?= e($_SESSION['user']['name']) ?></span></a>
             <?php else: ?>
                 <a class="account-link" href="<?= e(url('login')) ?>"><span class="header-icon">♙</span><span>Tài khoản</span></a>

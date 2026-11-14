@@ -149,6 +149,13 @@ class OrderModel extends BaseModel
                 throw new DomainException('Đơn hàng đã hủy không thể chuyển sang trạng thái khác.');
             }
 
+            if ($status === 'cancelled') {
+                $this->cancelOrderRecord($orderId, $order['coupon_id']);
+                $this->pdo->commit();
+
+                return;
+            }
+
             $this->execute(
                 'UPDATE orders SET status = :status WHERE id = :id',
                 ['status' => $status, 'id' => (int) $orderId]
@@ -162,47 +169,84 @@ class OrderModel extends BaseModel
                 );
             }
 
-            if ($status === 'cancelled') {
-                $details = $this->execute(
-                    'SELECT product_id, quantity FROM order_details
-                     WHERE order_id = :id AND product_id IS NOT NULL',
-                    ['id' => (int) $orderId]
-                )->fetchAll();
-
-                foreach ($details as $detail) {
-                    $this->execute(
-                        'UPDATE products
-                         SET stock_quantity = stock_quantity + :increase,
-                             sold_quantity = GREATEST(sold_quantity - :decrease, 0)
-                         WHERE id = :id',
-                        [
-                            'increase' => (int) $detail['quantity'],
-                            'decrease' => (int) $detail['quantity'],
-                            'id' => (int) $detail['product_id'],
-                        ]
-                    );
-                }
-
-                $this->execute(
-                    "UPDATE payments SET status = IF(status = 'paid', 'refunded', 'failed')
-                     WHERE order_id = :id",
-                    ['id' => (int) $orderId]
-                );
-
-                if (!empty($order['coupon_id'])) {
-                    $this->execute(
-                        'UPDATE coupons SET used_count = GREATEST(used_count - 1, 0) WHERE id = :id',
-                        ['id' => (int) $order['coupon_id']]
-                    );
-                }
-            }
-
             $this->pdo->commit();
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
             throw $exception;
+        }
+    }
+
+    /**
+     * Khách tự hủy đơn đang chờ xác nhận / đã xác nhận.
+     */
+    public function cancelForUser($orderId, $userId)
+    {
+        $this->pdo->beginTransaction();
+
+        try {
+            $order = $this->execute(
+                'SELECT id, status, coupon_id FROM orders
+                 WHERE id = :id AND user_id = :user_id FOR UPDATE',
+                ['id' => (int) $orderId, 'user_id' => (int) $userId]
+            )->fetch();
+
+            if (!$order) {
+                throw new DomainException('Không tìm thấy đơn hàng của bạn.');
+            }
+            if (!in_array($order['status'], ['pending', 'confirmed'], true)) {
+                throw new DomainException('Chỉ có thể hủy đơn đang chờ xác nhận hoặc đã xác nhận.');
+            }
+
+            $this->cancelOrderRecord($orderId, $order['coupon_id']);
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function cancelOrderRecord($orderId, $couponId)
+    {
+        $this->execute(
+            "UPDATE orders SET status = 'cancelled' WHERE id = :id",
+            ['id' => (int) $orderId]
+        );
+
+        $details = $this->execute(
+            'SELECT product_id, quantity FROM order_details
+             WHERE order_id = :id AND product_id IS NOT NULL',
+            ['id' => (int) $orderId]
+        )->fetchAll();
+
+        foreach ($details as $detail) {
+            $this->execute(
+                'UPDATE products
+                 SET stock_quantity = stock_quantity + :increase,
+                     sold_quantity = GREATEST(sold_quantity - :decrease, 0)
+                 WHERE id = :id',
+                [
+                    'increase' => (int) $detail['quantity'],
+                    'decrease' => (int) $detail['quantity'],
+                    'id' => (int) $detail['product_id'],
+                ]
+            );
+        }
+
+        $this->execute(
+            "UPDATE payments SET status = IF(status = 'paid', 'refunded', 'failed')
+             WHERE order_id = :id",
+            ['id' => (int) $orderId]
+        );
+
+        if (!empty($couponId)) {
+            $this->execute(
+                'UPDATE coupons SET used_count = GREATEST(used_count - 1, 0) WHERE id = :id',
+                ['id' => (int) $couponId]
+            );
         }
     }
 
@@ -218,7 +262,7 @@ class OrderModel extends BaseModel
     public function getDetailsForUser($orderId, $userId)
     {
         return $this->execute(
-            'SELECT od.product_name, od.unit_price, od.quantity
+            'SELECT od.product_id, od.product_name, od.unit_price, od.quantity
              FROM order_details od
              INNER JOIN orders o ON o.id = od.order_id
              WHERE o.id = :order_id AND o.user_id = :user_id

@@ -144,6 +144,35 @@ if (!function_exists('url')) {
     }
 }
 
+if (!function_exists('absolute_url')) {
+    function absolute_url($path = '')
+    {
+        $url = url($path);
+        if (preg_match('#^https?://#i', $url)) {
+            return $url;
+        }
+
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        return $scheme . '://' . $host . '/' . ltrim($url, '/');
+    }
+}
+
+if (!function_exists('send_mail')) {
+    function send_mail($to, $subject, $body)
+    {
+        $host = parse_url(absolute_url(''), PHP_URL_HOST) ?: 'localhost';
+        $from = 'no-reply@' . preg_replace('/^www\./i', '', $host);
+        $headers = "From: TruyenThuVi <{$from}>\r\n"
+            . "MIME-Version: 1.0\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n"
+            . "Content-Transfer-Encoding: 8bit\r\n";
+
+        return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers);
+    }
+}
+
 if (!function_exists('product_image_url')) {
     function product_image_url($coverImage)
     {

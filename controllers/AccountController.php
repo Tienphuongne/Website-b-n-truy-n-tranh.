@@ -72,4 +72,105 @@ class AccountController extends BaseController
         $view = 'account/index';
         require PATH_VIEW . 'main.php';
     }
+
+    public function cancelOrder()
+    {
+        $this->guardCustomer();
+        $this->requirePost();
+        $orderId = filter_input(INPUT_POST, 'order_id', FILTER_VALIDATE_INT);
+
+        if (!$orderId) {
+            flash('warning', 'Đơn hàng không hợp lệ.');
+            redirect('account?tab=orders');
+        }
+
+        try {
+            (new OrderModel())->cancelForUser($orderId, (int) $_SESSION['user']['id']);
+            flash('success', 'Đã hủy đơn hàng #' . (int) $orderId . '.');
+        } catch (DomainException $exception) {
+            flash('warning', $exception->getMessage());
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+        }
+
+        redirect('account?tab=orders&order=' . (int) $orderId);
+    }
+
+    public function reorder()
+    {
+        $this->guardCustomer();
+        $this->requirePost();
+        $orderId = filter_input(INPUT_POST, 'order_id', FILTER_VALIDATE_INT);
+
+        if (!$orderId) {
+            flash('warning', 'Đơn hàng không hợp lệ.');
+            redirect('account?tab=orders');
+        }
+
+        try {
+            $details = (new OrderModel())->getDetailsForUser($orderId, (int) $_SESSION['user']['id']);
+            if (!$details) {
+                flash('warning', 'Không tìm thấy sản phẩm trong đơn hàng này.');
+                redirect('account?tab=orders&order=' . (int) $orderId);
+            }
+
+            $productIds = [];
+            foreach ($details as $detail) {
+                if (!empty($detail['product_id'])) {
+                    $productIds[] = (int) $detail['product_id'];
+                }
+            }
+            $products = $productIds ? (new ProductModel())->getByIds($productIds) : [];
+            $productMap = [];
+            foreach ($products as $product) {
+                $productMap[(int) $product['id']] = $product;
+            }
+
+            $cart = $_SESSION['cart'] ?? [];
+            $added = 0;
+            $skipped = 0;
+            foreach ($details as $detail) {
+                $productId = (int) ($detail['product_id'] ?? 0);
+                $product = $productMap[$productId] ?? null;
+                if (!$product || (int) $product['stock_quantity'] < 1) {
+                    $skipped++;
+                    continue;
+                }
+                $quantity = min(
+                    max(1, (int) $detail['quantity']),
+                    (int) $product['stock_quantity'],
+                    99
+                );
+                $cart[$productId] = min(
+                    (int) ($cart[$productId] ?? 0) + $quantity,
+                    (int) $product['stock_quantity']
+                );
+                $added++;
+            }
+            $_SESSION['cart'] = $cart;
+
+            if ($added > 0) {
+                $message = 'Đã thêm ' . $added . ' sản phẩm từ đơn #' . (int) $orderId . ' vào giỏ hàng.';
+                if ($skipped > 0) {
+                    $message .= ' ' . $skipped . ' sản phẩm hiện không còn hàng.';
+                }
+                flash('success', $message);
+                redirect('cart');
+            }
+
+            flash('warning', 'Các sản phẩm trong đơn hàng hiện đều không còn hàng.');
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+        }
+
+        redirect('account?tab=orders&order=' . (int) $orderId);
+    }
+
+    private function guardCustomer()
+    {
+        if (empty($_SESSION['user']['id'])) {
+            flash('warning', 'Vui lòng đăng nhập để quản lý đơn hàng.');
+            redirect('login');
+        }
+    }
 }

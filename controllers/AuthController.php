@@ -105,6 +105,108 @@ class AuthController extends BaseController
         require PATH_VIEW . 'main.php';
     }
 
+    public function forgotPassword()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePost();
+            $email = trim(request_string($_POST, 'email'));
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                flash('danger', 'Vui lòng nhập địa chỉ email hợp lệ.');
+                redirect('forgot-password');
+            }
+
+            try {
+                $users = new UserModel();
+                $user = $users->findByEmail($email);
+                if ($user) {
+                    $token = $users->createPasswordReset((int) $user['id']);
+                    $link = absolute_url('reset-password?token=' . urlencode($token));
+                    $sent = send_mail(
+                        $user['email'],
+                        'Đặt lại mật khẩu TruyenThuVi',
+                        "Xin chào {$user['full_name']},\n\n"
+                        . "Bạn đã yêu cầu đặt lại mật khẩu tại TruyenThuVi.\n"
+                        . "Mở liên kết sau để tạo mật khẩu mới (hết hạn sau 1 giờ):\n"
+                        . $link . "\n\n"
+                        . "Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email."
+                    );
+                    if (!$sent) {
+                        error_log('Không gửi được email đặt lại mật khẩu tới ' . $user['email'] . '. Link: ' . $link);
+                    }
+                    if (strtolower((string) (getenv('APP_ENV') ?: 'local')) !== 'production') {
+                        $_SESSION['_dev_reset_link'] = $link;
+                    }
+                }
+                // Luôn trả về thông báo chung để tránh dò email đã đăng ký.
+                flash('success', 'Nếu email này đã đăng ký, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.');
+            } catch (PDOException | RuntimeException $exception) {
+                flash('danger', $this->reportDatabaseFailure($exception));
+            }
+            redirect('forgot-password');
+        }
+
+        $developmentResetLink = $_SESSION['_dev_reset_link'] ?? null;
+        unset($_SESSION['_dev_reset_link']);
+
+        $title = 'Quên mật khẩu';
+        $view = 'auth/forgot-password';
+        require PATH_VIEW . 'main.php';
+    }
+
+    public function resetPassword()
+    {
+        $token = request_string($_GET, 'token');
+        if ($token === '') {
+            $token = request_string($_POST, 'token');
+        }
+
+        $reset = null;
+        try {
+            if ($token !== '') {
+                $reset = (new UserModel())->findPasswordReset($token);
+            }
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+            redirect('forgot-password');
+        }
+
+        if (!$reset) {
+            flash('danger', 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.');
+            redirect('forgot-password');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->requirePost();
+            $new = request_string($_POST, 'password');
+            $confirm = request_string($_POST, 'password_confirmation');
+
+            if (strlen($new) < 8 || $new !== $confirm) {
+                flash('danger', 'Mật khẩu mới cần ít nhất 8 ký tự và phải khớp xác nhận.');
+                redirect('reset-password?token=' . urlencode($token));
+            }
+
+            try {
+                $users = new UserModel();
+                $users->updatePassword((int) $reset['user_id'], $new);
+                $users->deletePasswordResets((int) $reset['user_id']);
+                $users->clearRememberToken((int) $reset['user_id']);
+                clear_remember_cookie();
+                unset($_SESSION['user']);
+                session_regenerate_id(true);
+                flash('success', 'Đã đặt lại mật khẩu. Vui lòng đăng nhập bằng mật khẩu mới.');
+                redirect('login');
+            } catch (PDOException | RuntimeException $exception) {
+                flash('danger', $this->reportDatabaseFailure($exception));
+                redirect('reset-password?token=' . urlencode($token));
+            }
+        }
+
+        $title = 'Đặt lại mật khẩu';
+        $view = 'auth/reset-password';
+        require PATH_VIEW . 'main.php';
+    }
+
     public function logout()
     {
         $this->requirePost();
