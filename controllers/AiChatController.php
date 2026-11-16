@@ -4,6 +4,8 @@ class AiChatController extends BaseController
 {
     public function chat()
     {
+        @set_time_limit(60);
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['message' => 'Phương thức không được hỗ trợ.'], 405);
         }

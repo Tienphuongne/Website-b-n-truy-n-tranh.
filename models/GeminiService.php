@@ -57,7 +57,7 @@ class GeminiService
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT => 45,
             CURLOPT_USERAGENT => 'TruyenThuVi-AI/1.0',
         ]);
 

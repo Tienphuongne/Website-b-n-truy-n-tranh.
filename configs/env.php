@@ -62,7 +62,7 @@ define('DB_OPTIONS', [
 
 // Trợ lý AI (Google Gemini). Để trống AI_API_KEY để tạm ẩn widget chat.
 define('AI_API_KEY', getenv('AI_API_KEY') ?: '');
-define('AI_MODEL',   getenv('AI_MODEL') ?: 'gemini-2.5-flash');
+define('AI_MODEL',   getenv('AI_MODEL') ?: 'gemini-3.5-flash-lite');
 define('AI_API_BASE', rtrim(getenv('AI_API_BASE') ?: 'https://generativelanguage.googleapis.com/v1beta', '/'));
 define('AI_ENABLED', AI_API_KEY !== '');
 define('AI_MAX_HISTORY', max(2, (int) (getenv('AI_MAX_HISTORY') ?: 10)));

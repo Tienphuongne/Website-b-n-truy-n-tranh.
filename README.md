@@ -21,7 +21,7 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
    APP_BASE_URL=http://localhost/website-ban-truyen-tranh/
 
    AI_API_KEY=
-   AI_MODEL=gemini-2.5-flash
+   AI_MODEL=gemini-3.5-flash-lite
    ```
 
    Khi triển khai tại domain root, đặt `APP_BASE_URL` thành URL root có dấu `/` cuối. Không lưu thông tin mật khẩu thật trong Git. Nếu không dùng `.env`, có thể đặt cùng các biến này bằng `SetEnv` trong Apache.
@@ -45,10 +45,10 @@ Widget chat nổi ở góc phải trang cửa hàng, tư vấn truyện theo dan
 
    ```text
    AI_API_KEY=your-key-here
-   AI_MODEL=gemini-2.5-flash
+   AI_MODEL=gemini-3.5-flash-lite
    ```
 
-3. Tải lại trang. Nếu `AI_API_KEY` để trống, widget tự ẩn và endpoint `ai/chat` trả lỗi 503.
+3. Tải lại trang. Nếu `AI_API_KEY` để trống, widget tự ẩn và endpoint `ai/chat` trả lỗi 503. Nếu Google báo model không khả dụng với tài khoản của bạn, đổi `AI_MODEL` sang model khác đang hỗ trợ `generateContent` (ví dụ `gemini-3.8-flash` hoặc `gemini-flash-latest`).
 
 Endpoint `ai/chat` chỉ nhận POST, kiểm tra CSRF, giới hạn 1.000 ký tự mỗi tin nhắn, 10 lượt ngữ cảnh và 20 tin nhắn / 10 phút cho mỗi phiên. API key chỉ nằm ở server, không gửi xuống trình duyệt. Nội dung trả lời do AI sinh ra nên có thể sai; widget luôn kèm lời nhắc liên hệ cửa hàng.
 
