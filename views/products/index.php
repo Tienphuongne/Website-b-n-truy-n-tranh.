@@ -7,42 +7,52 @@
         <aside class="filter-panel">
             <h2>Bộ lọc</h2>
             <form method="get" action="<?= e(url('products')) ?>">
-                <label class="form-label" for="filter-search">Tên truyện, tác giả</label>
-                <input class="form-control mb-3" id="filter-search" name="q" value="<?= e($filters['q']) ?>" placeholder="Tìm truyện...">
-                <label class="form-label" for="filter-category">Danh mục</label>
-                <select class="form-select mb-3" id="filter-category" name="category">
-                    <option value="">Tất cả danh mục</option>
-                    <?php foreach ($categories as $category): ?>
-                        <option value="<?= (int) $category['id'] ?>" <?= (string) $filters['category'] === (string) $category['id'] ? 'selected' : '' ?>><?= e($category['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <label class="form-label" for="filter-genre">Thể loại</label>
-                <select class="form-select mb-3" id="filter-genre" name="genre">
-                    <option value="">Tất cả thể loại</option>
-                    <?php foreach ($genres as $genre): ?>
-                        <option value="<?= (int) $genre['id'] ?>" <?= (string) $filters['genre'] === (string) $genre['id'] ? 'selected' : '' ?>><?= e($genre['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <label class="form-label" for="filter-author">Tác giả</label>
-                <select class="form-select mb-3" id="filter-author" name="author">
-                    <option value="">Tất cả tác giả</option>
-                    <?php foreach ($authors as $author): ?>
-                        <option value="<?= (int) $author['id'] ?>" <?= (string) $filters['author'] === (string) $author['id'] ? 'selected' : '' ?>><?= e($author['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <div class="filter-field filter-field-wide">
+                    <label class="form-label" for="filter-search">Tên truyện, tác giả</label>
+                    <input class="form-control" id="filter-search" name="q" value="<?= e($filters['q']) ?>" placeholder="Tìm truyện...">
+                </div>
+                <div class="filter-field">
+                    <label class="form-label" for="filter-category">Danh mục</label>
+                    <select class="form-select" id="filter-category" name="category">
+                        <option value="">Tất cả danh mục</option>
+                        <?php foreach ($categories as $category): ?>
+                            <option value="<?= (int) $category['id'] ?>" <?= (string) $filters['category'] === (string) $category['id'] ? 'selected' : '' ?>><?= e($category['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label class="form-label" for="filter-genre">Thể loại</label>
+                    <select class="form-select" id="filter-genre" name="genre">
+                        <option value="">Tất cả thể loại</option>
+                        <?php foreach ($genres as $genre): ?>
+                            <option value="<?= (int) $genre['id'] ?>" <?= (string) $filters['genre'] === (string) $genre['id'] ? 'selected' : '' ?>><?= e($genre['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label class="form-label" for="filter-author">Tác giả</label>
+                    <select class="form-select" id="filter-author" name="author">
+                        <option value="">Tất cả tác giả</option>
+                        <?php foreach ($authors as $author): ?>
+                            <option value="<?= (int) $author['id'] ?>" <?= (string) $filters['author'] === (string) $author['id'] ? 'selected' : '' ?>><?= e($author['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label class="form-label" for="filter-sort">Sắp xếp</label>
+                    <select class="form-select" id="filter-sort" name="sort">
+                        <option value="newest" <?= $filters['sort'] === 'newest' ? 'selected' : '' ?>>Mới nhất</option>
+                        <option value="best_selling" <?= $filters['sort'] === 'best_selling' ? 'selected' : '' ?>>Bán chạy</option>
+                        <option value="rating" <?= $filters['sort'] === 'rating' ? 'selected' : '' ?>>Đánh giá cao</option>
+                        <option value="price_asc" <?= $filters['sort'] === 'price_asc' ? 'selected' : '' ?>>Giá tăng dần</option>
+                        <option value="price_desc" <?= $filters['sort'] === 'price_desc' ? 'selected' : '' ?>>Giá giảm dần</option>
+                    </select>
+                </div>
                 <div class="row g-2">
                     <div class="col-6"><label class="form-label" for="min-price">Giá từ</label><input class="form-control" id="min-price" type="number" min="0" name="min_price" value="<?= e($filters['min_price']) ?>"></div>
                     <div class="col-6"><label class="form-label" for="max-price">Đến</label><input class="form-control" id="max-price" type="number" min="0" name="max_price" value="<?= e($filters['max_price']) ?>"></div>
                 </div>
                 <label class="form-check mt-3 mb-3"><input class="form-check-input" type="checkbox" name="in_stock" value="1" <?= $filters['in_stock'] ? 'checked' : '' ?>> <span class="form-check-label">Chỉ xem còn hàng</span></label>
-                <label class="form-label" for="filter-sort">Sắp xếp</label>
-                <select class="form-select mb-3" id="filter-sort" name="sort">
-                    <option value="newest" <?= $filters['sort'] === 'newest' ? 'selected' : '' ?>>Mới nhất</option>
-                    <option value="best_selling" <?= $filters['sort'] === 'best_selling' ? 'selected' : '' ?>>Bán chạy</option>
-                    <option value="rating" <?= $filters['sort'] === 'rating' ? 'selected' : '' ?>>Đánh giá cao</option>
-                    <option value="price_asc" <?= $filters['sort'] === 'price_asc' ? 'selected' : '' ?>>Giá tăng dần</option>
-                    <option value="price_desc" <?= $filters['sort'] === 'price_desc' ? 'selected' : '' ?>>Giá giảm dần</option>
-                </select>
                 <button class="btn btn-primary w-100" type="submit">Áp dụng bộ lọc</button>
                 <a class="filter-reset" href="<?= e(url('products')) ?>">Xóa bộ lọc</a>
             </form>
