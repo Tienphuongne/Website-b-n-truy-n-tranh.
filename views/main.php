@@ -48,6 +48,7 @@ $ogDescription = 'TruyenThuVi - truyện hay mỗi ngày. Khám phá truyện tr
         <?php require PATH_VIEW . $view . '.php'; ?>
     </main>
     <?php require PATH_VIEW . 'components/footer.php'; ?>
+    <?php require PATH_VIEW . 'components/ai-chat.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= e(PATH_JS) ?>app.js"></script>
 </body>

@@ -1,5 +1,29 @@
 <?php
 
+// Nạp file .env (nếu có) mà không ghi đè biến môi trường đã được cấu hình.
+$envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+if (is_readable($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) {
+            continue;
+        }
+        [$key, $value] = explode('=', $line, 2);
+        $key = trim($key);
+        $value = trim($value);
+        if (strlen($value) >= 2) {
+            $first = $value[0];
+            $last = substr($value, -1);
+            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                $value = substr($value, 1, -1);
+            }
+        }
+        if ($key !== '' && getenv($key) === false) {
+            putenv($key . '=' . $value);
+        }
+    }
+}
+
 $configuredBaseUrl = getenv('APP_BASE_URL');
 if ($configuredBaseUrl === false || $configuredBaseUrl === '') {
     $scriptDirectory = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
@@ -35,3 +59,12 @@ define('DB_OPTIONS', [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
+
+// Trợ lý AI (Google Gemini). Để trống AI_API_KEY để tạm ẩn widget chat.
+define('AI_API_KEY', getenv('AI_API_KEY') ?: '');
+define('AI_MODEL',   getenv('AI_MODEL') ?: 'gemini-2.5-flash');
+define('AI_API_BASE', rtrim(getenv('AI_API_BASE') ?: 'https://generativelanguage.googleapis.com/v1beta', '/'));
+define('AI_ENABLED', AI_API_KEY !== '');
+define('AI_MAX_HISTORY', max(2, (int) (getenv('AI_MAX_HISTORY') ?: 10)));
+define('AI_RATE_WINDOW', max(60, (int) (getenv('AI_RATE_WINDOW') ?: 600)));
+define('AI_RATE_LIMIT', max(1, (int) (getenv('AI_RATE_LIMIT') ?: 20)));

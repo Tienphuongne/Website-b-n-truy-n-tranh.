@@ -10,7 +10,7 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
    ```powershell
    mysql -u root manga_house < database/migrations/2026_11_16_smart_checkout.sql
    ```
-3. Cấu hình biến môi trường cho tiến trình PHP:
+3. Cấu hình biến môi trường cho tiến trình PHP. Có thể copy `.env.example` thành `.env` (file `.env` đã được gitignore) rồi điền giá trị:
 
    ```text
    DB_HOST=localhost
@@ -19,9 +19,12 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
    DB_PASSWORD=
    DB_NAME=manga_house
    APP_BASE_URL=http://localhost/website-ban-truyen-tranh/
+
+   AI_API_KEY=
+   AI_MODEL=gemini-2.5-flash
    ```
 
-   Khi triển khai tại domain root, đặt `APP_BASE_URL` thành URL root có dấu `/` cuối. Không lưu thông tin mật khẩu thật trong Git.
+   Khi triển khai tại domain root, đặt `APP_BASE_URL` thành URL root có dấu `/` cuối. Không lưu thông tin mật khẩu thật trong Git. Nếu không dùng `.env`, có thể đặt cùng các biến này bằng `SetEnv` trong Apache.
 
 4. Mở `APP_BASE_URL`, đăng ký tài khoản khách hàng và thêm sản phẩm/danh mục/tác giả từ trang quản trị sau khi cấp quyền admin cho tài khoản đó:
 
@@ -32,6 +35,22 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
 5. Ảnh bìa có thể đặt trong `assets/uploads/`; lưu đường dẫn tương đối trong `products.cover_image`. Ngoài ra trang quản trị hỗ trợ tải ảnh trực tiếp (JPG/PNG/WEBP/GIF, tối đa 5MB) vào `assets/uploads/products/`, nên thư mục `assets/uploads/` cần quyền ghi của tiến trình PHP.
 
 Nếu chưa cấu hình `DB_NAME` hoặc database chưa khả dụng, trang cửa hàng vẫn hiển thị layout và empty state. Không có dữ liệu giả được tự tạo.
+
+## Trợ lý AI (Google Gemini)
+
+Widget chat nổi ở góc phải trang cửa hàng, tư vấn truyện theo danh mục thật trong database và trả lời các câu hỏi về giao hàng, thanh toán, đổi trả, tra cứu đơn.
+
+1. Lấy API key miễn phí tại <https://aistudio.google.com/app/apikey>.
+2. Điền vào `.env` (hoặc biến môi trường của Apache/PHP):
+
+   ```text
+   AI_API_KEY=your-key-here
+   AI_MODEL=gemini-2.5-flash
+   ```
+
+3. Tải lại trang. Nếu `AI_API_KEY` để trống, widget tự ẩn và endpoint `ai/chat` trả lỗi 503.
+
+Endpoint `ai/chat` chỉ nhận POST, kiểm tra CSRF, giới hạn 1.000 ký tự mỗi tin nhắn, 10 lượt ngữ cảnh và 20 tin nhắn / 10 phút cho mỗi phiên. API key chỉ nằm ở server, không gửi xuống trình duyệt. Nội dung trả lời do AI sinh ra nên có thể sai; widget luôn kèm lời nhắc liên hệ cửa hàng.
 
 ## Các route
 

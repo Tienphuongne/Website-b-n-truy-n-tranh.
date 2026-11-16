@@ -23,6 +23,7 @@ $routes = [
     'cart/remove' => [CartController::class, 'remove'],
     'checkout' => [CheckoutController::class, 'index'],
     'order/lookup' => [OrderController::class, 'lookup'],
+    'ai/chat' => [AiChatController::class, 'chat'],
     'login' => [AuthController::class, 'login'],
     'register' => [AuthController::class, 'register'],
     'forgot-password' => [AuthController::class, 'forgotPassword'],
