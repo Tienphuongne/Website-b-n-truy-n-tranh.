@@ -126,11 +126,13 @@ CREATE TABLE orders (
     phone VARCHAR(30) NOT NULL,
     email VARCHAR(190) NULL,
     city VARCHAR(120) NOT NULL,
-    district VARCHAR(120) NOT NULL,
+    district VARCHAR(120) NOT NULL DEFAULT '',
+    ward VARCHAR(120) NULL,
     address VARCHAR(500) NOT NULL,
     note TEXT NULL,
     coupon_id BIGINT UNSIGNED NULL,
     payment_method ENUM('cod', 'bank_transfer') NOT NULL DEFAULT 'cod',
+    shipping_method ENUM('standard', 'express') NOT NULL DEFAULT 'standard',
     status ENUM('pending', 'confirmed', 'shipping', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
     shipping_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -141,6 +143,23 @@ CREATE TABLE orders (
     CONSTRAINT fk_orders_coupon FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL,
     INDEX idx_orders_status_created (status, created_at),
     INDEX idx_orders_user_created (user_id, created_at)
+) ENGINE=InnoDB;
+
+CREATE TABLE user_addresses (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    label VARCHAR(60) NOT NULL DEFAULT 'Địa chỉ đã lưu',
+    full_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    city VARCHAR(120) NOT NULL,
+    district VARCHAR(120) NOT NULL DEFAULT '',
+    ward VARCHAR(120) NULL,
+    address VARCHAR(500) NOT NULL,
+    is_default TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_addresses_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_addresses_user (user_id, is_default, updated_at)
 ) ENGINE=InnoDB;
 
 CREATE TABLE order_details (

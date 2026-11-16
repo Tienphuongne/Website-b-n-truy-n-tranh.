@@ -13,6 +13,7 @@ class AccountController extends BaseController
         $tab = $_GET['tab'] ?? 'profile';
         $orders = [];
         $orderDetails = [];
+        $addresses = [];
         $databaseError = null;
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -56,16 +57,21 @@ class AccountController extends BaseController
         }
 
         try {
-            $orders = (new OrderModel())->getForUser($userId);
+            if ($tab === 'orders' || $tab === 'profile') {
+                $orders = (new OrderModel())->getForUser($userId);
+            }
             if ($tab === 'orders' && !empty($_GET['order'])) {
                 $orderDetails = (new OrderModel())->getDetailsForUser(
                     (int) $_GET['order'],
                     $userId
                 );
             }
+            if ($tab === 'addresses') {
+                $addresses = (new AddressModel())->forUser($userId);
+            }
         } catch (PDOException | RuntimeException $exception) {
             error_log($exception->getMessage());
-            $databaseError = 'Chưa thể tải lịch sử đơn hàng.';
+            $databaseError = $tab === 'addresses' ? 'Chưa thể tải sổ địa chỉ.' : 'Chưa thể tải lịch sử đơn hàng.';
         }
 
         $title = 'Tài khoản của tôi';
@@ -166,10 +172,51 @@ class AccountController extends BaseController
         redirect('account?tab=orders&order=' . (int) $orderId);
     }
 
+    public function deleteAddress()
+    {
+        $this->guardCustomer();
+        $this->requirePost();
+        $id = filter_input(INPUT_POST, 'address_id', FILTER_VALIDATE_INT);
+        if (!$id) {
+            flash('warning', 'Địa chỉ không hợp lệ.');
+            redirect('account?tab=addresses');
+        }
+        try {
+            $ok = (new AddressModel())->deleteForUser($id, (int) $_SESSION['user']['id']);
+            flash($ok ? 'success' : 'warning', $ok ? 'Đã xóa địa chỉ.' : 'Không tìm thấy địa chỉ.');
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+        }
+        redirect('account?tab=addresses');
+    }
+
+    public function defaultAddress()
+    {
+        $this->guardCustomer();
+        $this->requirePost();
+        $id = filter_input(INPUT_POST, 'address_id', FILTER_VALIDATE_INT);
+        if (!$id) {
+            flash('warning', 'Địa chỉ không hợp lệ.');
+            redirect('account?tab=addresses');
+        }
+        try {
+            $addr = (new AddressModel())->findForUser($id, (int) $_SESSION['user']['id']);
+            if ($addr) {
+                (new AddressModel())->saveForUser((int) $_SESSION['user']['id'], $addr);
+                flash('success', 'Đã đặt làm địa chỉ mặc định.');
+            } else {
+                flash('warning', 'Không tìm thấy địa chỉ.');
+            }
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+        }
+        redirect('account?tab=addresses');
+    }
+
     private function guardCustomer()
     {
         if (empty($_SESSION['user']['id'])) {
-            flash('warning', 'Vui lòng đăng nhập để quản lý đơn hàng.');
+            flash('warning', 'Vui lòng đăng nhập để quản lý tài khoản.');
             redirect('login');
         }
     }

@@ -1,7 +1,7 @@
 <section class="container section-space">
     <div class="page-heading"><div><span class="eyebrow">GIỎ HÀNG CỦA BẠN</span><h1>Giỏ hàng</h1></div></div>
     <?php if (!empty($items)): ?>
-        <?php $subtotal = 0; foreach ($items as $item) { $subtotal += (float) $item['sale_price'] * (int) $item['quantity']; } $shipping = 30000; ?>
+        <?php $subtotal = 0; foreach ($items as $item) { $subtotal += (float) $item['sale_price'] * (int) $item['quantity']; } $shipping = shipping_fee_for('standard', $subtotal); $freeRemaining = free_shipping_remaining($subtotal); ?>
         <div class="cart-layout">
             <div class="cart-items">
                 <?php foreach ($items as $item): ?>
@@ -35,10 +35,11 @@
             <aside class="summary-card">
                 <h2>Tóm tắt đơn hàng</h2>
                 <div class="summary-row"><span>Tạm tính</span><strong><?= number_format($subtotal, 0, ',', '.') ?>₫</strong></div>
-                <div class="summary-row"><span>Phí vận chuyển</span><strong><?= number_format($shipping, 0, ',', '.') ?>₫</strong></div>
-                <div class="summary-row summary-total"><span>Tổng thanh toán</span><strong><?= number_format($subtotal + $shipping, 0, ',', '.') ?>₫</strong></div>
+                <div class="summary-row"><span>Phí vận chuyển (tiêu chuẩn)</span><strong><?= e($shipping <= 0 ? 'Miễn phí' : number_format($shipping, 0, ',', '.') . '₫') ?></strong></div>
+                <?php if ($freeRemaining > 0): ?><div class="summary-note">Mua thêm <strong><?= number_format($freeRemaining, 0, ',', '.') ?>₫</strong> để miễn phí giao tiêu chuẩn. Bạn có thể chọn giao nhanh ở bước thanh toán.</div><?php else: ?><div class="summary-note is-free">Đơn hàng đủ điều kiện miễn phí giao tiêu chuẩn.</div><?php endif; ?>
+                <div class="summary-row summary-total"><span>Tạm tính thanh toán</span><strong><?= number_format($subtotal + $shipping, 0, ',', '.') ?>₫</strong></div>
                 <a class="btn btn-primary w-100" href="<?= e(url('checkout')) ?>">Tiến hành thanh toán</a>
-                <p class="secure-note">Thanh toán an toàn · Hỗ trợ COD</p>
+                <p class="secure-note">Thanh toán an toàn · COD / Chuyển khoản · Ước tính giao 2–4 ngày</p>
             </aside>
         </div>
     <?php else: ?>

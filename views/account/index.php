@@ -6,6 +6,10 @@ $orderStatusLabels = [
     'completed' => 'Hoàn tất',
     'cancelled' => 'Đã hủy',
 ];
+$shippingLabels = [
+    'standard' => 'Tiêu chuẩn',
+    'express' => 'Nhanh',
+];
 $selectedOrderId = (int) ($_GET['order'] ?? 0);
 $selectedOrder = null;
 foreach ($orders as $orderRow) {
@@ -22,6 +26,7 @@ foreach ($orders as $orderRow) {
     <div class="account-layout">
         <nav class="account-nav" aria-label="Tài khoản">
             <a class="<?= $tab === 'profile' ? 'active' : '' ?>" href="<?= e(url('account')) ?>">Thông tin cá nhân</a>
+            <a class="<?= $tab === 'addresses' ? 'active' : '' ?>" href="<?= e(url('account?tab=addresses')) ?>">Sổ địa chỉ</a>
             <a class="<?= $tab === 'password' ? 'active' : '' ?>" href="<?= e(url('account?tab=password')) ?>">Đổi mật khẩu</a>
             <a class="<?= $tab === 'orders' ? 'active' : '' ?>" href="<?= e(url('account?tab=orders')) ?>">Lịch sử đơn hàng</a>
             <a href="<?= e(url('wishlist')) ?>">Truyện yêu thích</a>
@@ -36,6 +41,34 @@ foreach ($orders as $orderRow) {
                     <label class="form-label" for="confirm-password">Xác nhận mật khẩu mới</label><input class="form-control mb-3" id="confirm-password" name="password_confirmation" type="password" required minlength="8" autocomplete="new-password">
                     <button class="btn btn-primary" type="submit">Cập nhật mật khẩu</button>
                 </form>
+
+            <?php elseif ($tab === 'addresses'): ?>
+                <h2>Sổ địa chỉ nhận hàng</h2>
+                <p class="text-muted" style="font-size:10px;margin-bottom:14px">Lưu địa chỉ để thanh toán nhanh hơn. Bạn có thể thêm mới trực tiếp khi đặt hàng (chọn “Lưu địa chỉ này”).</p>
+                <?php if (!empty($databaseError)): ?><p class="text-muted"><?= e($databaseError) ?></p>
+                <?php elseif (!empty($addresses)): ?>
+                    <div class="address-book-grid">
+                        <?php foreach ($addresses as $addr): ?>
+                            <div class="address-book-card <?= !empty($addr['is_default']) ? 'is-default' : '' ?>">
+                                <div class="address-book-head">
+                                    <strong><?= e($addr['label'] ?: 'Địa chỉ đã lưu') ?></strong>
+                                    <?php if (!empty($addr['is_default'])): ?><span class="saved-address-badge">Mặc định</span><?php endif; ?>
+                                </div>
+                                <div class="address-book-line"><strong><?= e($addr['full_name']) ?></strong> · <?= e($addr['phone']) ?></div>
+                                <div class="address-book-line"><?= e(full_address_line($addr)) ?></div>
+                                <div class="address-book-actions">
+                                    <?php if (empty($addr['is_default'])): ?>
+                                        <form method="post" action="<?= e(url('account/address/default')) ?>"><?= csrf_field() ?><input type="hidden" name="address_id" value="<?= (int) $addr['id'] ?>"><button class="btn btn-sm btn-outline-primary" type="submit">Đặt mặc định</button></form>
+                                    <?php endif; ?>
+                                    <form method="post" action="<?= e(url('account/address/delete')) ?>" data-confirm="Xóa địa chỉ này?"><?= csrf_field() ?><input type="hidden" name="address_id" value="<?= (int) $addr['id'] ?>"><button class="btn btn-sm btn-outline-secondary" type="submit">Xóa</button></form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="muted-panel">Bạn chưa có địa chỉ nào được lưu. Khi thanh toán, hãy chọn “Lưu địa chỉ này vào sổ địa chỉ”.</div>
+                <?php endif; ?>
+
             <?php elseif ($tab === 'orders'): ?>
                 <h2>Lịch sử đơn hàng</h2>
                 <?php if ($databaseError): ?><p class="text-muted"><?= e($databaseError) ?></p>
@@ -61,6 +94,7 @@ foreach ($orders as $orderRow) {
                         <div class="muted-panel">Không tìm thấy đơn hàng #<?= (int) $selectedOrderId ?> trong tài khoản của bạn.</div>
                     <?php endif; ?>
                 <?php else: ?><div class="muted-panel">Bạn chưa có đơn hàng nào.</div><?php endif; ?>
+
             <?php else: ?>
                 <h2>Thông tin cá nhân</h2>
                 <form method="post" action="<?= e(url('account')) ?>" class="account-form">

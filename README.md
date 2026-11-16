@@ -5,7 +5,11 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
 ## Chạy dự án
 
 1. Cấu hình Apache để thư mục dự án là document root và bật `mod_rewrite`/AllowOverride để dùng `.htaccess`.
-2. Tạo database và các bảng bằng cách import `database/schema.sql` vào MySQL.
+2. Tạo database và các bảng bằng cách import `database/schema.sql` vào MySQL. Nếu database đã được tạo từ phiên bản trước, chạy thêm migration sổ địa chỉ / phương thức giao hàng một lần:
+
+   ```powershell
+   mysql -u root manga_house < database/migrations/2026_11_16_smart_checkout.sql
+   ```
 3. Cấu hình biến môi trường cho tiến trình PHP:
 
    ```text
@@ -40,11 +44,13 @@ Các chức năng cửa hàng chính:
 - Tìm kiếm theo tên truyện, tác giả, nhà xuất bản hoặc mô tả; lọc theo danh mục, thể loại, tác giả, khoảng giá và tình trạng còn hàng.
 - Sắp xếp theo mới nhất, bán chạy, đánh giá cao hoặc giá; phân trang và hiển thị chip bộ lọc đang áp dụng.
 - Trang chi tiết liên kết tới danh mục/tác giả/thể loại, hiển thị điểm đánh giá và gợi ý truyện liên quan theo danh mục, tác giả hoặc thể loại.
+- Thanh toán thông minh: sổ địa chỉ cho tài khoản đã đăng nhập, tự điền từ địa chỉ mặc định hoặc đơn gần nhất, chuẩn hóa số điện thoại, chọn tỉnh/thành cùng phường/xã, gợi ý ghi chú và lưu địa chỉ cho lần sau. Khách vãng lai được ghi nhớ thông tin trong phiên hiện tại.
+- Giao hàng: giao tiêu chuẩn 30.000₫ (miễn phí từ 300.000₫) hoặc giao nhanh 45.000₫, kèm khoảng ngày giao dự kiến. Mức phí và ngưỡng miễn phí nằm trong `configs/shipping.php`.
 
 Các chức năng quản trị chính:
 
 - Sản phẩm: thêm/sửa/xóa, tải ảnh bìa, chọn nhiều thể loại và quản lý thư viện ảnh.
-- Đơn hàng: xem chi tiết khách hàng, sản phẩm, phí vận chuyển/giảm giá và cập nhật trạng thái.
+- Đơn hàng: xem chi tiết khách hàng, địa chỉ đầy đủ (phường/xã), phương thức giao hàng, sản phẩm, phí vận chuyển/giảm giá và cập nhật trạng thái.
 - Liên hệ: theo dõi và đổi trạng thái tin nhắn từ trang liên hệ.
 - Thống kê: doanh thu 7 ngày gần nhất trên dashboard và báo cáo theo khoảng ngày tại `/admin/reports` (tối đa 5 năm gần nhất).
 

@@ -12,6 +12,11 @@ $paymentLabels = [
     'cod' => 'Thanh toán khi nhận hàng (COD)',
     'bank_transfer' => 'Chuyển khoản ngân hàng',
 ];
+$shippingLabels = [
+    'standard' => 'Giao tiêu chuẩn',
+    'express' => 'Giao nhanh',
+];
+$orderPhone = normalize_phone_number($order['phone'] ?? '');
 $subtotal = 0;
 foreach ($items as $item) {
     $subtotal += (float) $item['unit_price'] * (int) $item['quantity'];
@@ -24,15 +29,16 @@ foreach ($items as $item) {
         <div class="admin-order-box">
             <h3>Thông tin khách hàng</h3>
             <p><span>Họ tên</span><strong><?= e($order['customer_name']) ?></strong></p>
-            <p><span>Điện thoại</span><strong><?= e($order['phone']) ?></strong></p>
-            <p><span>Email</span><strong><?= e($order['email'] ?: '—') ?></strong></p>
-            <p><span>Địa chỉ</span><strong><?= e($order['address']) ?>, <?= e($order['district']) ?>, <?= e($order['city']) ?></strong></p>
+            <p><span>Điện thoại</span><strong><?php if ($orderPhone !== ''): ?><a href="tel:<?= e($orderPhone) ?>"><?= e($order['phone']) ?></a><?php else: ?>—<?php endif; ?></strong></p>
+            <p><span>Email</span><strong><?php if (!empty($order['email'])): ?><a href="mailto:<?= e($order['email']) ?>"><?= e($order['email']) ?></a><?php else: ?>—<?php endif; ?></strong></p>
+            <p><span>Địa chỉ</span><strong><?= e(full_address_line($order)) ?></strong></p>
             <p><span>Ghi chú</span><strong><?= e($order['note'] ?: '—') ?></strong></p>
         </div>
         <div class="admin-order-box">
             <h3>Thông tin đơn hàng</h3>
             <p><span>Trạng thái</span><strong><?= e($statusLabels[$order['status']] ?? $order['status']) ?></strong></p>
             <p><span>Thanh toán</span><strong><?= e($paymentLabels[$order['payment_method']] ?? $order['payment_method']) ?></strong></p>
+            <p><span>Giao hàng</span><strong><?= e($shippingLabels[$order['shipping_method'] ?? 'standard'] ?? 'Giao tiêu chuẩn') ?></strong></p>
             <p><span>Mã giảm giá</span><strong><?= e($order['coupon_code'] ?: '—') ?></strong></p>
             <p><span>Tài khoản</span><strong><?= $order['user_id'] ? '#' . (int) $order['user_id'] : 'Khách vãng lai' ?></strong></p>
             <p><span>Cập nhật</span><strong><?= e($order['updated_at'] ?: '—') ?></strong></p>

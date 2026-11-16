@@ -142,4 +142,152 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    document.querySelectorAll('form[data-checkout]').forEach(function (form) {
+        var subtotal = parseFloat(form.getAttribute('data-subtotal')) || 0;
+        var discount = parseFloat(form.getAttribute('data-discount')) || 0;
+        var freeThreshold = parseFloat(form.getAttribute('data-free-threshold')) || 0;
+        var standardFee = parseFloat(form.getAttribute('data-fee-standard')) || 0;
+        var expressFee = parseFloat(form.getAttribute('data-fee-express')) || 0;
+        var etaStandard = form.getAttribute('data-eta-standard') || '';
+        var etaExpress = form.getAttribute('data-eta-express') || '';
+        var money = new Intl.NumberFormat('vi-VN');
+        var shippingEl = form.querySelector('#summary-shipping');
+        var totalEl = form.querySelector('#summary-total');
+        var etaEl = form.querySelector('[data-delivery-eta]');
+        var methodInputs = form.querySelectorAll('input[name="shipping_method"]');
+
+        function currentMethod() {
+            for (var index = 0; index < methodInputs.length; index++) {
+                if (methodInputs[index].checked) {
+                    return methodInputs[index].value;
+                }
+            }
+
+            return 'standard';
+        }
+
+        function feeFor(method) {
+            if (method === 'express') return expressFee;
+
+            return subtotal >= freeThreshold ? 0 : standardFee;
+        }
+
+        function updateSummary() {
+            var method = currentMethod();
+            var fee = feeFor(method);
+            if (shippingEl) {
+                shippingEl.textContent = fee <= 0 ? 'Miễn phí' : money.format(fee) + '₫';
+            }
+            if (totalEl) {
+                totalEl.textContent = money.format(Math.max(0, subtotal + fee - discount)) + '₫';
+            }
+            if (etaEl) {
+                etaEl.textContent = method === 'express' ? etaExpress : etaStandard;
+            }
+            form.querySelectorAll('.delivery-option').forEach(function (option) {
+                var input = option.querySelector('input[name="shipping_method"]');
+                option.classList.toggle('is-selected', !!(input && input.checked));
+            });
+        }
+
+        methodInputs.forEach(function (input) {
+            input.addEventListener('change', updateSummary);
+        });
+        updateSummary();
+
+        var savedRadios = form.querySelectorAll('[data-saved-address]');
+        var newAddressRadio = form.querySelector('[data-new-address]');
+
+        function setField(name, value) {
+            var field = form.elements[name];
+            if (field) field.value = value || '';
+        }
+
+        function markSelectedAddress(card) {
+            form.querySelectorAll('.saved-address').forEach(function (item) {
+                item.classList.toggle('is-selected', item === card);
+            });
+        }
+
+        savedRadios.forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                if (!radio.checked) return;
+
+                var data;
+                try {
+                    data = JSON.parse(radio.getAttribute('data-saved-address'));
+                } catch (error) {
+                    return;
+                }
+
+                setField('full_name', data.full_name);
+                setField('phone', data.phone);
+                setField('city', data.city);
+                setField('district', data.district);
+                setField('ward', data.ward);
+                setField('address', data.address);
+
+                var phoneInput = form.elements.phone;
+                if (phoneInput) phoneInput.classList.remove('is-invalid');
+                markSelectedAddress(radio.closest('.saved-address'));
+            });
+        });
+
+        if (newAddressRadio) {
+            newAddressRadio.addEventListener('change', function () {
+                if (!newAddressRadio.checked) return;
+
+                ['full_name', 'phone', 'city', 'district', 'ward', 'address'].forEach(function (name) {
+                    setField(name, '');
+                });
+                markSelectedAddress(newAddressRadio.closest('.saved-address'));
+
+                var nameInput = form.elements.full_name;
+                if (nameInput) nameInput.focus();
+            });
+        }
+
+        var phoneField = form.querySelector('[data-phone-input]');
+        if (phoneField) {
+            phoneField.addEventListener('blur', function () {
+                var digits = phoneField.value.replace(/\D+/g, '');
+                if (digits.length === 11 && digits.indexOf('84') === 0) {
+                    digits = '0' + digits.slice(2);
+                }
+                if (digits !== '') phoneField.value = digits;
+                phoneField.classList.toggle('is-invalid', digits !== '' && !phoneField.checkValidity());
+            });
+            phoneField.addEventListener('input', function () {
+                phoneField.classList.remove('is-invalid');
+            });
+        }
+
+        var noteField = form.querySelector('[data-order-note]');
+        form.querySelectorAll('[data-note-chip]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (!noteField) return;
+
+                var text = button.getAttribute('data-note-chip') || '';
+                var current = noteField.value.trim();
+                if (current.indexOf(text) !== -1) return;
+
+                noteField.value = current === '' ? text : current + '. ' + text;
+                button.classList.add('is-used');
+                noteField.focus();
+            });
+        });
+
+        var saveAddress = form.querySelector('[data-save-address]');
+        var addressLabel = form.querySelector('[data-address-label]');
+        if (saveAddress && addressLabel) {
+            var syncAddressLabel = function () {
+                addressLabel.disabled = !saveAddress.checked;
+                var box = addressLabel.closest('.save-address-box');
+                if (box) box.classList.toggle('is-off', !saveAddress.checked);
+            };
+            saveAddress.addEventListener('change', syncAddressLabel);
+            syncAddressLabel();
+        }
+    });
 });

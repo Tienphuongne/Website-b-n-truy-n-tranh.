@@ -2,8 +2,12 @@
 
 class OrderModel extends BaseModel
 {
-    public function createOrder(array $customer, array $cart, $paymentMethod, $shippingFee, $userId = null, $couponId = null)
+    public function createOrder(array $customer, array $cart, $paymentMethod, $shippingFee, $userId = null, $couponId = null, $shippingMethod = 'standard')
     {
+        if (!in_array($shippingMethod, ['standard', 'express'], true)) {
+            throw new DomainException('Phương thức giao hàng không hợp lệ.');
+        }
+
         $this->pdo->beginTransaction();
 
         try {
@@ -40,8 +44,8 @@ class OrderModel extends BaseModel
 
             $this->execute(
                 "INSERT INTO orders
-                 (user_id, customer_name, phone, email, city, district, address, note, payment_method, status, shipping_fee, coupon_id, discount_amount, created_at)
-                 VALUES (:user_id, :name, :phone, :email, :city, :district, :address, :note, :payment_method, 'pending', :shipping_fee, :coupon_id, :discount_amount, NOW())",
+                 (user_id, customer_name, phone, email, city, district, ward, address, note, payment_method, shipping_method, status, shipping_fee, coupon_id, discount_amount, created_at)
+                 VALUES (:user_id, :name, :phone, :email, :city, :district, :ward, :address, :note, :payment_method, :shipping_method, 'pending', :shipping_fee, :coupon_id, :discount_amount, NOW())",
                 [
                     'user_id' => $userId ? (int) $userId : null,
                     'name' => $customer['full_name'],
@@ -49,9 +53,11 @@ class OrderModel extends BaseModel
                     'email' => $customer['email'],
                     'city' => $customer['city'],
                     'district' => $customer['district'],
+                    'ward' => $customer['ward'] ?? '',
                     'address' => $customer['address'],
                     'note' => $customer['note'],
                     'payment_method' => $paymentMethod,
+                    'shipping_method' => $shippingMethod,
                     'shipping_fee' => $shippingFee,
                     'coupon_id' => $couponId ? (int) $couponId : null,
                     'discount_amount' => $discount,
@@ -250,10 +256,20 @@ class OrderModel extends BaseModel
         }
     }
 
+    public function getLatestAddressForUser($userId)
+    {
+        return $this->execute(
+            'SELECT customer_name, phone, email, city, district, ward, address
+             FROM orders WHERE user_id = :user_id
+             ORDER BY created_at DESC LIMIT 1',
+            ['user_id' => (int) $userId]
+        )->fetch();
+    }
+
     public function getForUser($userId)
     {
         return $this->execute(
-            'SELECT id, total_amount, status, created_at FROM orders
+            'SELECT id, total_amount, status, shipping_method, shipping_fee, created_at FROM orders
              WHERE user_id = :user_id ORDER BY created_at DESC',
             ['user_id' => (int) $userId]
         )->fetchAll();
@@ -269,5 +285,18 @@ class OrderModel extends BaseModel
              ORDER BY od.id',
             ['order_id' => (int) $orderId, 'user_id' => (int) $userId]
         )->fetchAll();
+    }
+
+    /**
+     * Địa chỉ của đơn gần nhất, dùng để gợi ý khi khách quay lại thanh toán.
+     */
+    public function latestAddressForUser($userId)
+    {
+        return $this->execute(
+            'SELECT customer_name, phone, email, city, district, ward, address
+             FROM orders WHERE user_id = :user_id
+             ORDER BY created_at DESC, id DESC LIMIT 1',
+            ['user_id' => (int) $userId]
+        )->fetch();
     }
 }

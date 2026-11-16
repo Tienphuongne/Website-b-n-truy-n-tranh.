@@ -5,6 +5,7 @@ session_start();
 $root = __DIR__ . DIRECTORY_SEPARATOR;
 require_once $root . 'configs/env.php';
 require_once $root . 'configs/helper.php';
+require_once $root . 'configs/shipping.php';
 
 spl_autoload_register(function ($class) {
     if (!preg_match('/^[A-Za-z][A-Za-z0-9_]*$/', $class)) {
