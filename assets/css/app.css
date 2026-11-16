@@ -392,3 +392,29 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .address-book-line { color: #777980; font-size: 10px; line-height: 1.55; }
 .address-book-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .form-text { color: #92939a; font-size: 9px; margin-top: 4px; }
+
+/* Order lookup & admin order filters */
+.lookup-layout { display: grid; gap: 20px; max-width: 880px; margin: 0 auto; }
+.lookup-meta { border-top: 1px solid var(--line); display: grid; gap: 8px; margin-top: 18px; padding-top: 16px; }
+.lookup-meta p { display: flex; gap: 12px; font-size: 11px; justify-content: space-between; margin: 0; }
+.lookup-meta span { color: #92939a; flex: 0 0 96px; }
+.lookup-meta strong { text-align: right; }
+.lookup-totals { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+.lookup-totals > div { display: flex; font-size: 11px; justify-content: space-between; padding: 5px 0; }
+.lookup-total { border-top: 1px dashed var(--line); font-size: 13px !important; margin-top: 6px; padding-top: 10px !important; }
+.order-timeline { display: flex; gap: 10px; list-style: none; margin: 4px 0 18px; padding: 0; }
+.order-timeline li { color: #a1a2a7; flex: 1; font-size: 9px; position: relative; text-align: center; }
+.order-timeline-dot { background: #e5e5e8; border-radius: 50%; display: block; height: 10px; margin: 0 auto 6px; width: 10px; }
+.order-timeline li.done { color: #2f7a57; }
+.order-timeline li.done .order-timeline-dot { background: #2f7a57; }
+.order-timeline li.current strong { color: var(--accent-dark); }
+.order-timeline li.current .order-timeline-dot { background: var(--accent); box-shadow: 0 0 0 4px rgba(240, 90, 53, .15); }
+.admin-order-filters { align-items: center; background: #faf8f6; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 10px; }
+.admin-order-filters .form-select { max-width: 180px; }
+.admin-order-filters .form-control[type="search"] { flex: 1 1 200px; min-width: 160px; }
+.admin-order-filters .form-control[type="date"] { max-width: 150px; }
+@media print {
+    .admin-sidebar, .admin-topbar, .admin-order-status-form, .invoice-actions, .admin-panel-heading a { display: none !important; }
+    .admin-shell { display: block !important; }
+    .admin-main, .admin-content { margin: 0 !important; padding: 0 !important; }
+}

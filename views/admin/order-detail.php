@@ -23,7 +23,12 @@ foreach ($items as $item) {
 }
 ?>
 <section class="admin-panel">
-    <div class="admin-panel-heading"><div><h2>Đơn hàng #<?= (int) $order['id'] ?></h2><p>Đặt lúc <?= e($order['created_at']) ?></p></div><a href="<?= e(url('admin/orders')) ?>">← Danh sách đơn hàng</a></div>
+    <div class="admin-panel-heading"><div><h2>Đơn hàng #<?= (int) $order['id'] ?></h2><p>Đặt lúc <?= e($order['created_at']) ?></p></div>
+        <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="<?= e(url('admin/orders/invoice?id=' . (int) $order['id'])) ?>" target="_blank" rel="noopener">In hoá đơn</a>
+            <a href="<?= e(url('admin/orders')) ?>">← Danh sách đơn hàng</a>
+        </div>
+    </div>
 
     <div class="admin-order-grid">
         <div class="admin-order-box">

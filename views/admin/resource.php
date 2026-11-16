@@ -1,8 +1,36 @@
+<?php
+$isOrders = ($_GET['resource'] ?? '') === 'orders';
+$orderFilters = $resource['filters'] ?? [];
+$orderStatusLabels = [
+    'pending' => 'Chờ xác nhận',
+    'confirmed' => 'Đã xác nhận',
+    'shipping' => 'Đang giao',
+    'completed' => 'Hoàn tất',
+    'cancelled' => 'Đã hủy',
+];
+?>
 <section class="admin-panel">
     <div class="admin-panel-heading"><div><h2><?= e($resource['title'] ?? 'Danh sách') ?></h2><p>Danh sách dữ liệu hiện có trong cửa hàng.</p></div>
         <?php if (!empty($definition['create'])): ?><a class="btn btn-primary btn-sm" href="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/create')) ?>">+ Thêm mới</a><?php endif; ?>
     </div>
-    <div class="admin-list-search"><input type="search" class="form-control" placeholder="Tìm trong danh sách..." data-admin-search><span><?= count($resource['rows'] ?? []) ?> bản ghi</span></div>
+
+    <?php if ($isOrders): ?>
+        <form method="get" action="<?= e(url('admin/orders')) ?>" class="admin-order-filters">
+            <select class="form-select" name="status" aria-label="Lọc theo trạng thái">
+                <option value="">Tất cả trạng thái</option>
+                <?php foreach ($orderStatusLabels as $value => $label): ?>
+                    <option value="<?= e($value) ?>" <?= ($orderFilters['status'] ?? '') === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <input class="form-control" type="search" name="q" value="<?= e($orderFilters['q'] ?? '') ?>" placeholder="Mã đơn, tên, SĐT, email">
+            <input class="form-control" type="date" name="from" value="<?= e($orderFilters['from'] ?? '') ?>" aria-label="Từ ngày">
+            <input class="form-control" type="date" name="to" value="<?= e($orderFilters['to'] ?? '') ?>" aria-label="Đến ngày">
+            <button class="btn btn-primary btn-sm" type="submit">Lọc</button>
+            <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('admin/orders')) ?>">Xoá lọc</a>
+        </form>
+    <?php endif; ?>
+
+    <div class="admin-list-search"><input type="search" class="form-control" placeholder="Tìm nhanh trong kết quả..." data-admin-search><span><?= count($resource['rows'] ?? []) ?> bản ghi</span></div>
     <?php if (!empty($resource['rows'])): ?>
         <div class="table-responsive"><table class="table align-middle"><thead><tr><?php foreach (array_keys($resource['rows'][0]) as $column): ?><th><?= e(ucwords(str_replace('_', ' ', $column))) ?></th><?php endforeach; ?><th>Thao tác</th></tr></thead><tbody>
             <?php foreach ($resource['rows'] as $row): ?><tr><?php foreach ($row as $value): ?><td><?= e($value === null ? '—' : $value) ?></td><?php endforeach; ?><td class="admin-row-actions">

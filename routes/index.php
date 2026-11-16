@@ -22,6 +22,7 @@ $routes = [
     'cart/update' => [CartController::class, 'update'],
     'cart/remove' => [CartController::class, 'remove'],
     'checkout' => [CheckoutController::class, 'index'],
+    'order/lookup' => [OrderController::class, 'lookup'],
     'login' => [AuthController::class, 'login'],
     'register' => [AuthController::class, 'register'],
     'forgot-password' => [AuthController::class, 'forgotPassword'],
@@ -37,6 +38,7 @@ $routes = [
     'about' => [PageController::class, 'about'],
     'contact' => [PageController::class, 'contact'],
     'admin' => [AdminController::class, 'dashboard'],
+    'admin/orders/invoice' => [AdminController::class, 'invoice'],
 ];
 
 if (preg_match('#^product/detail/(\d+)$#', $action, $matches)) {

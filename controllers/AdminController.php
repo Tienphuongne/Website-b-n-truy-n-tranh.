@@ -96,6 +96,16 @@ class AdminController extends BaseController
                     $this->requirePost();
                     if ($key === 'orders' && $task === 'edit') {
                         (new OrderModel())->updateStatus($id, request_string($_POST, 'status'));
+                        try {
+                            $mailDetail = (new AdminModel())->getOrderDetail((int) $id);
+                            if ($mailDetail) {
+                                $mailOrder = $mailDetail['order'];
+                                $mailOrder['items'] = $mailDetail['items'];
+                                send_order_status_email($mailOrder);
+                            }
+                        } catch (Throwable $e) {
+                            error_log('Order status email failed: ' . $e->getMessage());
+                        }
                     } else {
                         $model->saveRecord(
                             $key,
@@ -134,7 +144,21 @@ class AdminController extends BaseController
                 return;
             }
 
-            $resource = $model->getResource($key);
+            if ($key === 'orders' && $task === '') {
+                $filters = [
+                    'status' => request_string($_GET, 'status'),
+                    'q' => trim(request_string($_GET, 'q')),
+                    'from' => $this->reportDate($_GET['from'] ?? '', ''),
+                    'to' => $this->reportDate($_GET['to'] ?? '', ''),
+                ];
+                $resource = [
+                    'title' => 'Đơn hàng',
+                    'rows' => $model->getOrders($filters),
+                    'filters' => $filters,
+                ];
+            } else {
+                $resource = $model->getResource($key);
+            }
         } catch (DomainException $exception) {
             flash('danger', $exception->getMessage());
             redirect($this->formTarget($key, $task, $id));
@@ -163,6 +187,32 @@ class AdminController extends BaseController
         $title = $resource['title'] ?? ($definition['title'] ?? 'Quản lý dữ liệu');
         $view = 'admin/resource';
         require PATH_VIEW . 'admin.php';
+    }
+
+    public function invoice()
+    {
+        $this->requireAdmin();
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if (!$id) {
+            flash('warning', 'Đơn hàng không hợp lệ.');
+            redirect('admin/orders');
+        }
+
+        try {
+            $detail = (new AdminModel())->getOrderDetail($id);
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+            redirect('admin/orders');
+        }
+
+        if (!$detail) {
+            http_response_code(404);
+            flash('warning', 'Không tìm thấy đơn hàng cần in.');
+            redirect('admin/orders');
+        }
+
+        $title = 'Hoá đơn #' . (int) $id;
+        require PATH_VIEW . 'admin/invoice.php';
     }
 
     private function reportDate($value, $fallback)

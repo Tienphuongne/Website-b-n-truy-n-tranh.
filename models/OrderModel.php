@@ -299,4 +299,64 @@ class OrderModel extends BaseModel
             ['user_id' => (int) $userId]
         )->fetch();
     }
+
+    /**
+     * Tra cứu đơn công khai: cần đúng mã đơn + số điện thoại đặt hàng.
+     */
+    public function findByCodeAndPhone($orderId, $phone)
+    {
+        $order = $this->execute(
+            'SELECT id, customer_name, phone, email, city, district, ward, address, note,
+                    payment_method, shipping_method, status, shipping_fee, discount_amount,
+                    total_amount, created_at, updated_at
+             FROM orders
+             WHERE id = :id
+             LIMIT 1',
+            ['id' => (int) $orderId]
+        )->fetch();
+
+        if (!$order) {
+            return null;
+        }
+
+        // Đơn cũ có thể lưu số ở dạng +84..., nên so sánh sau khi chuẩn hóa.
+        $stored = normalize_phone_number($order['phone'] ?? '');
+        $expected = normalize_phone_number($phone);
+        if ($stored === '' || $expected === '' || !hash_equals($stored, $expected)) {
+            return null;
+        }
+
+        return $order;
+    }
+
+    public function getItems($orderId)
+    {
+        return $this->execute(
+            'SELECT product_id, product_name, unit_price, quantity
+             FROM order_details WHERE order_id = :order_id ORDER BY id',
+            ['order_id' => (int) $orderId]
+        )->fetchAll();
+    }
+
+    /**
+     * Toàn bộ đơn + sản phẩm, dùng cho email và in hoá đơn.
+     */
+    public function getById($orderId)
+    {
+        $order = $this->execute(
+            'SELECT o.*, c.code AS coupon_code
+             FROM orders o
+             LEFT JOIN coupons c ON c.id = o.coupon_id
+             WHERE o.id = :id LIMIT 1',
+            ['id' => (int) $orderId]
+        )->fetch();
+
+        if (!$order) {
+            return null;
+        }
+
+        $order['items'] = $this->getItems((int) $orderId);
+
+        return $order;
+    }
 }

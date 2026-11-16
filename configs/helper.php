@@ -263,3 +263,137 @@ if (!function_exists('clear_remember_cookie')) {
         set_remember_cookie('', time() - 3600);
     }
 }
+
+if (!function_exists('order_status_label')) {
+    function order_status_label($status)
+    {
+        $labels = [
+            'pending' => 'Chờ xác nhận',
+            'confirmed' => 'Đã xác nhận',
+            'shipping' => 'Đang giao',
+            'completed' => 'Hoàn tất',
+            'cancelled' => 'Đã hủy',
+        ];
+
+        return $labels[$status] ?? (string) $status;
+    }
+}
+
+if (!function_exists('payment_method_label')) {
+    function payment_method_label($method)
+    {
+        $labels = [
+            'cod' => 'Thanh toán khi nhận hàng (COD)',
+            'bank_transfer' => 'Chuyển khoản ngân hàng',
+        ];
+
+        return $labels[$method] ?? (string) $method;
+    }
+}
+
+if (!function_exists('shipping_method_label')) {
+    function shipping_method_label($method)
+    {
+        $labels = [
+            'standard' => 'Giao tiêu chuẩn',
+            'express' => 'Giao nhanh',
+        ];
+
+        return $labels[$method] ?? 'Giao tiêu chuẩn';
+    }
+}
+
+if (!function_exists('order_email_body')) {
+    /**
+     * Nội dung email dạng text thuần cho đơn hàng.
+     */
+    function order_email_body(array $order, $heading)
+    {
+        $money = function ($value) {
+            return number_format((float) $value, 0, ',', '.') . '₫';
+        };
+        $subtotal = 0.0;
+        $items = $order['items'] ?? [];
+        foreach ($items as $item) {
+            $subtotal += (float) $item['unit_price'] * (int) $item['quantity'];
+        }
+
+        $lines = [
+            'Xin chào ' . ($order['customer_name'] ?? 'bạn') . ',',
+            '',
+            $heading,
+            '',
+            'Mã đơn hàng: #' . (int) ($order['id'] ?? 0),
+            'Trạng thái: ' . order_status_label($order['status'] ?? 'pending'),
+            'Ngày đặt: ' . ($order['created_at'] ?? date('Y-m-d H:i:s')),
+        ];
+
+        if ($items) {
+            $lines[] = '';
+            $lines[] = 'Sản phẩm:';
+            foreach ($items as $item) {
+                $lines[] = '- ' . $item['product_name'] . ' × ' . (int) $item['quantity']
+                    . ': ' . $money((float) $item['unit_price'] * (int) $item['quantity']);
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = 'Tạm tính: ' . $money($subtotal);
+        $lines[] = 'Phí vận chuyển (' . shipping_method_label($order['shipping_method'] ?? 'standard') . '): '
+            . $money($order['shipping_fee'] ?? 0);
+        if ((float) ($order['discount_amount'] ?? 0) > 0) {
+            $lines[] = 'Giảm giá: -' . $money($order['discount_amount']);
+        }
+        $lines[] = 'Tổng thanh toán: ' . $money($order['total_amount'] ?? 0);
+        $lines[] = '';
+        $lines[] = 'Giao đến: ' . full_address_line($order);
+        $lines[] = 'Người nhận: ' . ($order['customer_name'] ?? '') . ' · ' . ($order['phone'] ?? '');
+        $lines[] = 'Thanh toán: ' . payment_method_label($order['payment_method'] ?? 'cod');
+
+        if (!empty($order['note'])) {
+            $lines[] = 'Ghi chú: ' . $order['note'];
+        }
+
+        $lines[] = '';
+        $lines[] = 'Dự kiến giao: ' . delivery_window($order['shipping_method'] ?? 'standard');
+        $lines[] = '';
+        $lines[] = 'Bạn có thể tra cứu trạng thái đơn tại: ' . absolute_url('order/lookup');
+        $lines[] = '';
+        $lines[] = 'Cảm ơn bạn đã mua truyện tại TruyenThuVi!';
+
+        return implode("\n", $lines);
+    }
+}
+
+if (!function_exists('send_order_confirmation_email')) {
+    function send_order_confirmation_email(array $order)
+    {
+        if (empty($order['email']) || !filter_var($order['email'], FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        return send_mail(
+            $order['email'],
+            'Xác nhận đơn hàng #' . (int) ($order['id'] ?? 0) . ' - TruyenThuVi',
+            order_email_body($order, 'Cảm ơn bạn đã đặt hàng! Chúng tôi đã nhận được đơn của bạn và sẽ liên hệ xác nhận sớm nhất.')
+        );
+    }
+}
+
+if (!function_exists('send_order_status_email')) {
+    function send_order_status_email(array $order)
+    {
+        if (empty($order['email']) || !filter_var($order['email'], FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        $status = $order['status'] ?? 'pending';
+        $heading = 'Đơn hàng của bạn đã được cập nhật trạng thái: ' . order_status_label($status) . '.';
+
+        return send_mail(
+            $order['email'],
+            'Cập nhật đơn hàng #' . (int) ($order['id'] ?? 0) . ': ' . order_status_label($status) . ' - TruyenThuVi',
+            order_email_body($order, $heading)
+        );
+    }
+}

@@ -106,6 +106,15 @@ class CheckoutController extends BaseController
                         }
                     }
 
+                    try {
+                        $orderForEmail = (new OrderModel())->getById($orderId);
+                        if ($orderForEmail) {
+                            send_order_confirmation_email($orderForEmail);
+                        }
+                    } catch (Throwable $e) {
+                        error_log('Order confirmation email failed: ' . $e->getMessage());
+                    }
+
                     $_SESSION['cart'] = [];
                     unset($_SESSION['coupon'], $_SESSION['checkout_draft']);
                     redirect('checkout?success=' . $orderId);

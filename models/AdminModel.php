@@ -173,6 +173,54 @@ class AdminModel extends BaseModel
         ];
     }
 
+    /**
+     * Danh sách đơn hàng có lọc theo trạng thái, từ khoá và khoảng ngày.
+     */
+    public function getOrders(array $filters = [])
+    {
+        $where = [];
+        $params = [];
+
+        $statuses = ['pending', 'confirmed', 'shipping', 'completed', 'cancelled'];
+        $status = (string) ($filters['status'] ?? '');
+        if (in_array($status, $statuses, true)) {
+            $where[] = 'status = :status';
+            $params['status'] = $status;
+        }
+
+        $q = trim((string) ($filters['q'] ?? ''));
+        if ($q !== '') {
+            // MySQL không cho dùng lại một named parameter nhiều lần khi emulate prepares = false.
+            $where[] = '(customer_name LIKE :q_name OR phone LIKE :q_phone OR email LIKE :q_email OR CAST(id AS CHAR) LIKE :q_id)';
+            $like = '%' . $q . '%';
+            $params['q_name'] = $like;
+            $params['q_phone'] = $like;
+            $params['q_email'] = $like;
+            $params['q_id'] = $like;
+        }
+
+        $from = (string) ($filters['from'] ?? '');
+        if ($from !== '') {
+            $where[] = 'created_at >= :from';
+            $params['from'] = $from . ' 00:00:00';
+        }
+
+        $to = (string) ($filters['to'] ?? '');
+        if ($to !== '') {
+            $where[] = 'created_at < :to';
+            $params['to'] = date('Y-m-d', strtotime($to . ' +1 day')) . ' 00:00:00';
+        }
+
+        $sql = 'SELECT id, customer_name, phone, total_amount, status, shipping_method, created_at
+                FROM orders';
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY created_at DESC, id DESC LIMIT 200';
+
+        return $this->execute($sql, $params)->fetchAll();
+    }
+
     public function getDefinition($key)
     {
         return self::$resources[$key] ?? null;

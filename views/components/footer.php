@@ -7,6 +7,7 @@
         </div>
         <div>
             <h2 class="footer-heading">Hỗ trợ khách hàng</h2>
+            <a href="<?= e(url('order/lookup')) ?>">Tra cứu đơn hàng</a>
             <a href="<?= e(url('about')) ?>">Chính sách mua hàng</a>
             <a href="<?= e(url('about')) ?>">Chính sách đổi trả</a>
             <a href="<?= e(url('contact')) ?>">Câu hỏi thường gặp</a>
