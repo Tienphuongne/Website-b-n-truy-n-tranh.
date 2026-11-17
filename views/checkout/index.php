@@ -145,7 +145,7 @@
 
     <?php if (!empty($items) && empty($orderComplete)): ?>
         <?php $jsFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT; ?>
-        <script src="<?= e(PATH_JS) ?>vietnam-addresses.js"></script>
+        <script src="<?= e(PATH_JS) ?>vietnam-addresses.js?v=<?= e($addressJsVersion ?? '1') ?>"></script>
         <script>
             (function () {
                 var addressData = window.VIETNAM_ADDRESSES || {};
