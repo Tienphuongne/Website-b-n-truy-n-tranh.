@@ -11,6 +11,19 @@ $ogDescription = 'TruyenThuVi - truyện hay mỗi ngày. Khám phá truyện tr
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f05a35">
     <title><?= e($pageTitle) ?></title>
+    <script>
+        function showCoverFallback(img) {
+            if (!img || img.dataset.fallbackApplied) {
+                return;
+            }
+            img.dataset.fallbackApplied = '1';
+            var placeholder = document.createElement('span');
+            placeholder.className = 'cover-placeholder';
+            placeholder.setAttribute('aria-hidden', 'true');
+            placeholder.innerHTML = '<span>✦</span><small>TRUYENTHUVI</small>';
+            img.replaceWith(placeholder);
+        }
+    </script>
     <meta name="description" content="<?= e($ogDescription) ?>">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="TruyenThuVi">

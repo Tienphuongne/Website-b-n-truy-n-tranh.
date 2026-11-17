@@ -3,9 +3,10 @@
         <nav class="breadcrumb-line"><a href="<?= e(url('')) ?>">Trang chủ</a><span>/</span><a href="<?= e(url('products')) ?>">Truyện tranh</a><?php if (!empty($product['category_id'])): ?><span>/</span><a href="<?= e(url('products?category=' . (int) $product['category_id'])) ?>"><?= e($product['category_name'] ?? 'Danh mục') ?></a><?php endif; ?><span>/</span><span><?= e($product['name']) ?></span></nav>
         <div class="detail-layout">
             <div class="detail-cover">
-                <div class="cover-placeholder detail-placeholder" aria-hidden="true"><span>✦</span><small>TRUYENTHUVI</small></div>
                 <?php if (!empty($product['cover_image'])): ?>
-                    <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>" onerror="this.hidden=true">
+                    <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>" onerror="showCoverFallback(this)">
+                <?php else: ?>
+                    <div class="cover-placeholder detail-placeholder" aria-hidden="true"><span>✦</span><small>TRUYENTHUVI</small></div>
                 <?php endif; ?>
             </div>
             <div class="detail-info">

@@ -1,9 +1,10 @@
 <?php $isOutOfStock = (int) ($product['stock_quantity'] ?? 0) < 1; ?>
 <article class="product-card<?= $isOutOfStock ? ' is-out-of-stock' : '' ?>">
     <a class="product-cover" href="<?= e(url('product/detail/' . (int) $product['id'])) ?>">
-        <span class="cover-placeholder" aria-hidden="true"><span>✦</span><small>TRUYENTHUVI</small></span>
         <?php if (!empty($product['cover_image'])): ?>
-            <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>" loading="lazy" onerror="this.hidden=true">
+            <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>" loading="lazy" onerror="showCoverFallback(this)">
+        <?php else: ?>
+            <span class="cover-placeholder" aria-hidden="true"><span>✦</span><small>TRUYENTHUVI</small></span>
         <?php endif; ?>
         <?php if (!empty($product['is_featured'])): ?><span class="product-badge">Nổi bật</span><?php endif; ?>
         <?php if (!empty($product['original_price']) && $product['original_price'] > $product['sale_price']): ?>
