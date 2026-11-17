@@ -111,7 +111,7 @@ a { transition: color .15s ease; }
 .hero-carousel { background: linear-gradient(135deg, #fff8f4 0%, #fffdfb 55%, #fff4ee 100%); overflow: hidden; position: relative; }
 .hero-carousel::before { background: radial-gradient(circle, rgba(240,90,53,.10), transparent 70%); content: ''; height: 380px; left: -120px; position: absolute; top: -120px; width: 380px; }
 .hero-carousel .hero-content { min-height: 470px; position: relative; z-index: 1; }
-.hero-carousel .hero-slides { min-height: 400px; position: relative; }
+.hero-carousel .hero-slides { min-height: 400px; position: relative; width: 100%; }
 .hero-carousel .hero-slide { align-items: center; display: grid; gap: 30px; grid-template-columns: minmax(0, 1fr) 330px; inset: 0; opacity: 0; pointer-events: none; position: absolute; transform: translateY(14px); transition: opacity .45s ease, transform .45s ease; visibility: hidden; }
 .hero-carousel .hero-slide.is-active { opacity: 1; pointer-events: auto; position: relative; transform: none; visibility: visible; }
 .hero-carousel .hero-copy h1 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; letter-spacing: -.045em; line-height: 1.14; margin-bottom: 14px; }
