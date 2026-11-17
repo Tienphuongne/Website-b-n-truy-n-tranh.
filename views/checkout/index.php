@@ -155,6 +155,21 @@
                     return;
                 }
 
+                var cleanName = function (name) {
+                    return String(name || '').replace(/^(Thành phố|Thị xã|Quận|Huyện|Tỉnh)\s+/, '').trim();
+                };
+
+                function matchCity(value) {
+                    var name = cleanName(value);
+                    var keys = Object.keys(addressData);
+                    for (var i = 0; i < keys.length; i++) {
+                        if (keys[i].localeCompare(name, 'vi') === 0) {
+                            return keys[i];
+                        }
+                    }
+                    return '';
+                }
+
                 function renderDistricts(preselect) {
                     var districts = addressData[citySelect.value] || [];
                     districtSelect.innerHTML = '<option value="">-- Chọn quận / huyện --</option>';
@@ -164,13 +179,27 @@
                         option.textContent = name;
                         districtSelect.appendChild(option);
                     });
-                    if (preselect && districts.indexOf(preselect) === -1) {
+                    var wanted = cleanName(preselect);
+                    if (wanted && districts.indexOf(wanted) === -1) {
                         var extra = document.createElement('option');
-                        extra.value = preselect;
-                        extra.textContent = preselect;
+                        extra.value = wanted;
+                        extra.textContent = wanted;
                         districtSelect.appendChild(extra);
                     }
-                    districtSelect.value = preselect || '';
+                    districtSelect.value = wanted || '';
+                }
+
+                function applyCity(city, district) {
+                    var matched = matchCity(city);
+                    if (!matched && city) {
+                        var option = document.createElement('option');
+                        option.value = city;
+                        option.textContent = city;
+                        citySelect.appendChild(option);
+                        matched = city;
+                    }
+                    citySelect.value = matched || '';
+                    renderDistricts(district);
                 }
 
                 Object.keys(addressData).sort(function (a, b) {
@@ -182,12 +211,7 @@
                     citySelect.appendChild(option);
                 });
 
-                <?php if (!empty($customer['city'])): ?>
-                citySelect.value = <?= json_encode($customer['city'], $jsFlags) ?>;
-                renderDistricts(<?= json_encode($customer['district'], $jsFlags) ?>);
-                <?php else: ?>
-                renderDistricts('');
-                <?php endif; ?>
+                applyCity(<?= json_encode($customer['city'] ?? '', $jsFlags) ?>, <?= json_encode($customer['district'] ?? '', $jsFlags) ?>);
 
                 citySelect.addEventListener('change', function () {
                     renderDistricts('');
@@ -208,8 +232,7 @@
                             }
                         });
                         if (data.city) {
-                            citySelect.value = data.city;
-                            renderDistricts(data.district || '');
+                            applyCity(data.city, data.district || '');
                         }
                         document.querySelectorAll('.quick-address-chip').forEach(function (item) {
                             item.classList.remove('active');
