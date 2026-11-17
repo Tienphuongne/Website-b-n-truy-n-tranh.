@@ -153,7 +153,8 @@ class CheckoutController extends BaseController
         if ($customer['email'] !== '' && !filter_var($customer['email'], FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Email không hợp lệ.';
         }
-        if (!in_array($paymentMethod, ['cod', 'bank_transfer'], true)) {
+        $allowedMethods = ['cod', 'bank_transfer', 'vnpay', 'momo', 'card'];
+        if (!in_array($paymentMethod, $allowedMethods, true)) {
             $errors[] = 'Phương thức thanh toán không hợp lệ.';
         }
 

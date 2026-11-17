@@ -22,10 +22,66 @@
                     <div class="col-12"><label class="form-label" for="address">Địa chỉ nhận hàng *</label><input class="form-control" id="address" name="address" required autocomplete="street-address"></div>
                     <div class="col-12"><label class="form-label" for="note">Ghi chú đơn hàng</label><textarea class="form-control" id="note" name="note" rows="3"></textarea></div>
                 </div>
+
                 <h2 class="checkout-subheading">Phương thức thanh toán</h2>
-                <label class="payment-option"><input type="radio" name="payment_method" value="cod" checked><span><strong>Thanh toán khi nhận hàng (COD)</strong><small>Thanh toán trực tiếp khi nhận được truyện.</small></span></label>
-                <label class="payment-option"><input type="radio" name="payment_method" value="bank_transfer"><span><strong>Chuyển khoản ngân hàng</strong><small>Thông tin chuyển khoản sẽ được gửi sau khi xác nhận đơn.</small></span></label>
+                <div class="payment-methods">
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="cod" checked>
+                        <span class="payment-option-content">
+                            <span class="payment-icon">🏠</span>
+                            <span>
+                                <strong>Thanh toán khi nhận hàng (COD)</strong>
+                                <small>Thanh toán trực tiếp khi nhận được truyện.</small>
+                            </span>
+                        </span>
+                    </label>
+
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="bank_transfer">
+                        <span class="payment-option-content">
+                            <span class="payment-icon">🏦</span>
+                            <span>
+                                <strong>Chuyển khoản ngân hàng qua mã QR</strong>
+                                <small>Thông tin chuyển khoản / QR sẽ được gửi sau khi xác nhận đơn.</small>
+                            </span>
+                        </span>
+                    </label>
+
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="vnpay">
+                        <span class="payment-option-content">
+                            <span class="payment-icon payment-icon-vnpay">VNPAY</span>
+                            <span>
+                                <strong>VNPAY</strong>
+                                <small>Thanh toán nhanh qua cổng VNPAY (ATM / Internet Banking / QR).</small>
+                            </span>
+                        </span>
+                    </label>
+
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="momo">
+                        <span class="payment-option-content">
+                            <span class="payment-icon payment-icon-momo">MoMo</span>
+                            <span>
+                                <strong>MoMo</strong>
+                                <small>Thanh toán qua ví MoMo.</small>
+                            </span>
+                        </span>
+                    </label>
+
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="card">
+                        <span class="payment-option-content">
+                            <span class="payment-icon">💳</span>
+                            <span>
+                                <strong>Qua thẻ Visa / Master / JCB / Napas</strong>
+                                <small>Thanh toán bằng thẻ nội địa hoặc quốc tế.</small>
+                            </span>
+                        </span>
+                    </label>
+                </div>
             </section>
+
             <aside class="summary-card checkout-summary">
                 <h2>Đơn hàng của bạn</h2>
                 <?php foreach ($items as $item): ?>
