@@ -206,6 +206,31 @@ class OrderModel extends BaseModel
         }
     }
 
+    public function getSavedAddresses($userId)
+    {
+        $rows = $this->execute(
+            'SELECT customer_name, phone, email, city, district, address
+             FROM orders
+             WHERE user_id = :user_id
+             ORDER BY id DESC
+             LIMIT 6',
+            ['user_id' => (int) $userId]
+        )->fetchAll();
+
+        $addresses = [];
+        $seen = [];
+        foreach ($rows as $row) {
+            $key = mb_strtolower(trim($row['phone'] . '|' . $row['city'] . '|' . $row['district'] . '|' . $row['address']));
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $addresses[] = $row;
+        }
+
+        return $addresses;
+    }
+
     public function getForUser($userId)
     {
         return $this->execute(

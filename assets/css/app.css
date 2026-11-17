@@ -203,6 +203,12 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .secure-note { color: #a1a2a7; font-size: 9px; margin: 13px 0 0; text-align: center; }
 .checkout-layout { align-items: start; display: grid; gap: 25px; grid-template-columns: minmax(0, 1fr) 370px; }
 .checkout-card { padding: 27px; }
+.quick-address { align-items: center; background: #fffaf8; border: 1px dashed #f3cdbf; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; padding: 11px 13px; }
+.quick-address-label { color: #8c6a5d; font-size: 11px; font-weight: 700; }
+.quick-address-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.quick-address-chip { background: #fff; border: 1px solid #f0d9d0; border-radius: 999px; color: #7d5144; cursor: pointer; font-size: 10px; font-weight: 600; padding: 6px 11px; transition: border-color .15s ease, background .15s ease, color .15s ease; }
+.quick-address-chip:hover, .quick-address-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.checkout-card .form-select { font-size: 12px; }
 .checkout-subheading { border-top: 1px solid var(--line); margin-top: 29px; padding-top: 23px; }
 .payment-methods { display: flex; flex-direction: column; gap: 10px; }
 .payment-option { align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; display: flex; gap: 12px; margin: 0; padding: 14px 14px; transition: border-color .15s ease, background .15s ease; }

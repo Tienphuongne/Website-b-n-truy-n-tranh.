@@ -12,6 +12,24 @@ class CheckoutController extends BaseController
         $discount = 0;
         $orderComplete = filter_input(INPUT_GET, 'success', FILTER_VALIDATE_INT) ?: 0;
 
+        $savedAddresses = [];
+        if (!empty($_SESSION['user']['id'])) {
+            try {
+                $savedAddresses = (new OrderModel())->getSavedAddresses($_SESSION['user']['id']);
+            } catch (PDOException | RuntimeException $exception) {
+                // Không làm gián đoạn thanh toán nếu không tải được địa chỉ đã dùng.
+            }
+        }
+        $customer = [
+            'full_name' => $_SESSION['user']['name'] ?? '',
+            'phone' => $_SESSION['user']['phone'] ?? '',
+            'email' => $_SESSION['user']['email'] ?? '',
+            'city' => '',
+            'district' => '',
+            'address' => '',
+            'note' => '',
+        ];
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->requirePost();
             if (isset($_POST['apply_coupon'])) {
