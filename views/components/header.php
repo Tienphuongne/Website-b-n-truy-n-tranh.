@@ -10,6 +10,7 @@
             <button type="submit" aria-label="Tìm kiếm">⌕</button>
         </form>
         <div class="header-actions">
+            <button class="theme-toggle" type="button" data-theme-toggle aria-label="Chuyển chế độ tối" title="Chế độ tối" aria-pressed="false"><span class="theme-toggle-icon" aria-hidden="true">☾</span></button>
             <?php if (($_SESSION['user']['role'] ?? '') === 'admin'): ?>
                 <a class="account-link" href="<?= e(url('admin')) ?>"><span>Quản trị</span></a>
             <?php endif; ?>
