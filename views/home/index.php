@@ -12,6 +12,13 @@ $splitHeroTitle = static function ($name) {
         trim(mb_substr($name, $separator + 3)),
     ];
 };
+$promoProduct = null;
+if (!empty($discounted)) {
+    $promoProduct = $discounted[0];
+} elseif (!empty($featured)) {
+    $promoProduct = $featured[0];
+}
+$lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : [];
 ?>
 <section class="hero-section hero-carousel" data-hero-carousel data-interval="6500" aria-roledescription="carousel" aria-label="Truyện nổi bật của tuần">
     <div class="container hero-content">
@@ -96,6 +103,15 @@ $splitHeroTitle = static function ($name) {
     </div>
 </section>
 
+<section class="trust-strip">
+    <div class="container trust-grid">
+        <div class="trust-item"><span class="trust-icon">✦</span><span><strong>Truyện chính hãng</strong><small>Tuyển chọn kỹ từng đầu sách</small></span></div>
+        <div class="trust-item"><span class="trust-icon">➜</span><span><strong>Giao hàng toàn quốc</strong><small>Đóng gói cẩn thận, nhanh chóng</small></span></div>
+        <div class="trust-item"><span class="trust-icon">↺</span><span><strong>Đổi trả dễ dàng</strong><small>Hỗ trợ khi có lỗi sản phẩm</small></span></div>
+        <div class="trust-item"><span class="trust-icon">♡</span><span><strong>Cộng đồng độc giả</strong><small>Gợi ý truyện theo sở thích</small></span></div>
+    </div>
+</section>
+
 <section class="container section-space">
     <div class="section-heading">
         <div><span class="eyebrow">TÌM THEO SỞ THÍCH</span><h2>Danh mục truyện</h2></div>
@@ -131,6 +147,33 @@ $splitHeroTitle = static function ($name) {
     </div>
 </section>
 
+<section class="container home-promo">
+    <div class="promo-banner">
+        <div class="promo-copy">
+            <span class="eyebrow">ƯU ĐÃI CUỐI TUẦN</span>
+            <h2>Đọc nhiều hơn,<br><span>chi phí ít hơn.</span></h2>
+            <p>Những đầu truyện đang giảm giá sâu — cơ hội thêm cuốn mới cho kệ sách của bạn.</p>
+            <a class="btn btn-light" href="<?= e(url('products')) ?>">Xem ưu đãi <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="promo-art">
+            <div class="promo-ring" aria-hidden="true"></div>
+            <?php if ($promoProduct): ?>
+                <a class="promo-cover" href="<?= e(url('product/detail/' . (int) $promoProduct['id'])) ?>" aria-label="Xem ưu đãi <?= e($promoProduct['name']) ?>">
+                    <?php if (!empty($promoProduct['cover_image'])): ?>
+                        <img src="<?= e(product_image_url($promoProduct['cover_image'])) ?>" alt="Bìa truyện <?= e($promoProduct['name']) ?>" loading="lazy" onerror="showCoverFallback(this)">
+                    <?php else: ?>
+                        <span class="cover-placeholder"><span>✦</span><small>TRUYENTHUVI</small></span>
+                    <?php endif; ?>
+                    <span class="promo-badge">Giá tốt</span>
+                </a>
+            <?php else: ?>
+                <div class="promo-cover promo-cover-empty" aria-hidden="true"><span>✦</span><small>TRUYENTHUVI</small></div>
+            <?php endif; ?>
+            <span class="promo-spark spark-a" aria-hidden="true">✦</span><span class="promo-spark spark-b" aria-hidden="true">✧</span>
+        </div>
+    </div>
+</section>
+
 <section class="container section-space">
     <div class="section-heading">
         <div><span class="eyebrow">ĐƯỢC ĐỘC GIẢ LỰA CHỌN</span><h2>Truyện bán chạy</h2></div>
@@ -139,6 +182,28 @@ $splitHeroTitle = static function ($name) {
     <?php if (!empty($bestSellers)): ?>
         <div class="product-grid"><?php foreach ($bestSellers as $product): require PATH_VIEW . 'components/product-card.php'; endforeach; ?></div>
     <?php else: ?><div class="muted-panel">Danh sách bán chạy sẽ hiển thị sau khi có dữ liệu đơn hàng.</div><?php endif; ?>
+</section>
+
+<section class="container section-space">
+    <div class="story-panel">
+        <div class="story-art" aria-hidden="true">
+            <div class="story-orbit"></div>
+            <div class="story-book story-book-back"></div>
+            <div class="story-book story-book-front"><span>TRUYEN<br>THUVI<br>STORY</span></div>
+            <span class="story-quote">“</span>
+        </div>
+        <div class="story-copy">
+            <span class="eyebrow">VÌ SAO CHỌN TRUYENTHUVI</span>
+            <h2>Mỗi cuốn truyện là<br><span>một thế giới chờ khám phá.</span></h2>
+            <p>Chúng tôi tuyển chọn những bộ truyện đáng đọc nhất, đóng gói cẩn thận và gửi đến tay bạn cùng niềm vui được đọc.</p>
+            <div class="story-stats">
+                <div><strong>30+</strong><small>Đầu truyện</small></div>
+                <div><strong>4.9/5</strong><small>Đánh giá độc giả</small></div>
+                <div><strong>100%</strong><small>Bìa chính hãng</small></div>
+            </div>
+            <a class="text-link" href="<?= e(url('about')) ?>">Tìm hiểu câu chuyện của chúng tôi <span aria-hidden="true">→</span></a>
+        </div>
+    </div>
 </section>
 
 <section class="section-tint section-space">
@@ -158,9 +223,34 @@ $splitHeroTitle = static function ($name) {
         <div><span class="eyebrow">CẢM NHẬN TỪ ĐỘC GIẢ</span><h2>Truyện được yêu thích</h2></div>
         <a class="text-link" href="<?= e(url('products')) ?>">Xem bộ sưu tập <span aria-hidden="true">→</span></a>
     </div>
-    <?php if (!empty($mostLoved)): ?>
-        <div class="product-grid"><?php foreach ($mostLoved as $product): require PATH_VIEW . 'components/product-card.php'; endforeach; ?></div>
-    <?php else: ?><div class="muted-panel">Truyện được yêu thích sẽ hiển thị khi có đánh giá được duyệt.</div><?php endif; ?>
+    <?php if ($lovedTop): ?>
+        <div class="loved-grid">
+            <?php foreach ($lovedTop as $index => $product): ?>
+                <?php
+                $lovedUrl = url('product/detail/' . (int) $product['id']);
+                $lovedRating = (float) ($product['avg_rating'] ?? 0);
+                ?>
+                <a class="loved-card" href="<?= e($lovedUrl) ?>">
+                    <span class="loved-rank"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></span>
+                    <span class="loved-cover">
+                        <?php if (!empty($product['cover_image'])): ?>
+                            <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>" loading="lazy" onerror="showCoverFallback(this)">
+                        <?php else: ?>
+                            <span class="cover-placeholder"><span>✦</span><small>TRUYENTHUVI</small></span>
+                        <?php endif; ?>
+                    </span>
+                    <span class="loved-info">
+                        <strong><?= e($product['name']) ?></strong>
+                        <small><?= e($product['author_name'] ?? 'Đang cập nhật') ?></small>
+                        <span class="loved-meta">★ <?= number_format($lovedRating, 1) ?> · <?= (int) ($product['review_count'] ?? 0) ?> đánh giá</span>
+                        <b><?= number_format((float) $product['sale_price'], 0, ',', '.') ?>₫</b>
+                    </span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php else: ?>
+        <div class="muted-panel">Truyện được yêu thích sẽ hiển thị khi có đánh giá được duyệt.</div>
+    <?php endif; ?>
 </section>
 
 <section class="container section-space">

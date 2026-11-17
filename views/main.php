@@ -7,7 +7,6 @@ $cssVersion = is_file(PATH_ROOT . 'assets/css/app.css') ? (string) filemtime(PAT
 $uiCssVersion = is_file(PATH_ROOT . 'assets/css/ui-polish.css') ? (string) filemtime(PATH_ROOT . 'assets/css/ui-polish.css') : '1';
 $jsVersion = is_file(PATH_ROOT . 'assets/js/app.js') ? (string) filemtime(PATH_ROOT . 'assets/js/app.js') : '1';
 $heroJsVersion = is_file(PATH_ROOT . 'assets/js/hero-carousel.js') ? (string) filemtime(PATH_ROOT . 'assets/js/hero-carousel.js') : '1';
-$themeJsVersion = is_file(PATH_ROOT . 'assets/js/theme.js') ? (string) filemtime(PATH_ROOT . 'assets/js/theme.js') : '1';
 $addressJsVersion = is_file(PATH_ROOT . 'assets/js/vietnam-addresses.js') ? (string) filemtime(PATH_ROOT . 'assets/js/vietnam-addresses.js') : '1';
 ?>
 <!doctype html>
@@ -16,17 +15,6 @@ $addressJsVersion = is_file(PATH_ROOT . 'assets/js/vietnam-addresses.js') ? (str
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f05a35">
-    <script>
-        (function () {
-            try {
-                var saved = localStorage.getItem('ttv-theme');
-                var dark = saved ? saved === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-            } catch (error) {
-                document.documentElement.dataset.theme = 'light';
-            }
-        })();
-    </script>
     <title><?= e($pageTitle) ?></title>
     <script>
         function showCoverFallback(img) {
@@ -82,6 +70,5 @@ $addressJsVersion = is_file(PATH_ROOT . 'assets/js/vietnam-addresses.js') ? (str
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= e(PATH_JS) ?>app.js?v=<?= e($jsVersion) ?>"></script>
     <script src="<?= e(PATH_JS) ?>hero-carousel.js?v=<?= e($heroJsVersion) ?>"></script>
-    <script src="<?= e(PATH_JS) ?>theme.js?v=<?= e($themeJsVersion) ?>"></script>
 </body>
 </html>
