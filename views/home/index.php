@@ -150,6 +150,9 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lo
 
 <section class="container home-promo">
     <div class="promo-banner">
+        <span class="promo-shine" aria-hidden="true"></span>
+        <span class="promo-glow glow-a" aria-hidden="true"></span>
+        <span class="promo-glow glow-b" aria-hidden="true"></span>
         <div class="promo-copy">
             <span class="eyebrow">ƯU ĐÃI CUỐI TUẦN</span>
             <h2>Đọc nhiều hơn,<br><span>chi phí ít hơn.</span></h2>
@@ -165,12 +168,17 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lo
                     <?php else: ?>
                         <span class="cover-placeholder"><span>✦</span><small>TRUYENTHUVI</small></span>
                     <?php endif; ?>
+                    <span class="promo-glare" aria-hidden="true"></span>
                     <span class="promo-badge">Giá tốt</span>
                 </a>
             <?php else: ?>
-                <div class="promo-cover promo-cover-empty" aria-hidden="true"><span>✦</span><small>TRUYENTHUVI</small></div>
+                <div class="promo-cover promo-cover-empty" aria-hidden="true"><span>✦</span><small>TRUYENTHUVI</small><span class="promo-glare"></span></div>
             <?php endif; ?>
-            <span class="promo-spark spark-a" aria-hidden="true">✦</span><span class="promo-spark spark-b" aria-hidden="true">✧</span>
+            <span class="promo-spark spark-a" aria-hidden="true">✦</span>
+            <span class="promo-spark spark-b" aria-hidden="true">✧</span>
+            <span class="promo-spark spark-c" aria-hidden="true">✦</span>
+            <span class="promo-spark spark-d" aria-hidden="true">✧</span>
+            <span class="promo-spark spark-e" aria-hidden="true">✦</span>
         </div>
     </div>
 </section>
