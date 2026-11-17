@@ -231,24 +231,36 @@ class OrderModel extends BaseModel
         return $addresses;
     }
 
-    public function getForUser($userId)
+    public function getForUser($userId, $email = '')
     {
         return $this->execute(
-            'SELECT id, total_amount, status, created_at FROM orders
-             WHERE user_id = :user_id ORDER BY created_at DESC',
-            ['user_id' => (int) $userId]
+            "SELECT o.id, o.total_amount, o.status, o.created_at, o.coupon_id,
+                    c.code AS coupon_code, o.discount_amount, o.shipping_fee,
+                    o.payment_method, o.customer_name, o.phone, o.address, o.district, o.city,
+                    (SELECT COUNT(*) FROM order_details od WHERE od.order_id = o.id) AS item_count,
+                    (SELECT COALESCE(SUM(od.quantity), 0) FROM order_details od WHERE od.order_id = o.id) AS item_quantity
+             FROM orders o
+             LEFT JOIN coupons c ON c.id = o.coupon_id
+             WHERE o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email)
+             ORDER BY o.created_at DESC, o.id DESC",
+            ['user_id' => (int) $userId, 'email' => (string) $email]
         )->fetchAll();
     }
 
-    public function getDetailsForUser($orderId, $userId)
+    public function getDetailsForUser($orderId, $userId, $email = '')
     {
         return $this->execute(
-            'SELECT od.product_name, od.unit_price, od.quantity
+            "SELECT od.product_id, od.product_name, od.unit_price, od.quantity
              FROM order_details od
              INNER JOIN orders o ON o.id = od.order_id
-             WHERE o.id = :order_id AND o.user_id = :user_id
-             ORDER BY od.id',
-            ['order_id' => (int) $orderId, 'user_id' => (int) $userId]
+             WHERE o.id = :order_id
+               AND (o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email))
+             ORDER BY od.id",
+            [
+                'order_id' => (int) $orderId,
+                'user_id' => (int) $userId,
+                'email' => (string) $email,
+            ]
         )->fetchAll();
     }
 }

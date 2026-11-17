@@ -412,3 +412,65 @@ a { transition: color .15s ease; }
     .promo-copy h2 span, .promo-copy .btn-light::after { animation: none !important; }
 }
 
+/* ============================================================
+   Voucher count + user order history
+   ============================================================ */
+.account-voucher-card { align-items: center; background: linear-gradient(135deg, #fff5ef, #fff); border: 1px solid #f6ded2; border-radius: 11px; display: flex; gap: 11px; margin-top: 10px; padding: 13px 12px; }
+.voucher-mini-icon { align-items: center; background: var(--accent); border-radius: 9px; color: #fff; display: inline-flex; flex: 0 0 auto; font-size: 14px; height: 32px; justify-content: center; width: 32px; }
+.account-voucher-card > div { display: flex; flex-direction: column; min-width: 0; }
+.account-voucher-label { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.account-voucher-card strong { color: var(--accent-dark); font-size: 19px; font-weight: 800; line-height: 1.25; }
+.account-voucher-card strong small { color: #8a8b91; font-size: 10px; font-weight: 600; }
+.account-voucher-used { color: #92939a; font-size: 9px; }
+
+.coupon-entry-head { align-items: center; display: flex; gap: 8px; justify-content: space-between; }
+.coupon-entry-head .form-label { margin-bottom: 0; }
+.voucher-count { align-items: center; background: #fff1e8; border: 1px solid #f7d8c8; border-radius: 999px; color: var(--accent-dark); display: inline-flex; font-size: 9px; font-weight: 700; gap: 3px; padding: 4px 8px; white-space: nowrap; }
+.voucher-count strong { font-size: 11px; }
+.voucher-count-muted { background: #f6f6f7; border-color: #e9e9ec; color: #8a8b91; }
+.voucher-meta { color: #92939a; display: block; font-size: 9px; margin-top: 6px; }
+.voucher-code-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.voucher-code-chip { align-items: baseline; background: #fff; border: 1px dashed #eab79f; border-radius: 8px; cursor: pointer; display: inline-flex; gap: 5px; padding: 5px 8px; transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+.voucher-code-chip:hover, .voucher-code-chip.active { background: #fff4ed; border-color: var(--accent); transform: translateY(-1px); }
+.voucher-code-chip strong { color: var(--accent-dark); font-size: 9px; letter-spacing: .04em; }
+.voucher-code-chip small { color: #92939a; font-size: 8px; }
+
+.account-section-head { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 18px; }
+.account-section-head h2 { margin-bottom: 4px; }
+.account-section-head p { color: var(--muted); font-size: 10px; margin-bottom: 0; }
+.account-orders-table th:last-child, .account-orders-table td:last-child { text-align: right; }
+.account-orders-table td strong { display: block; font-size: 12px; }
+.account-orders-table td small { color: #92939a; display: block; font-size: 9px; margin-top: 2px; }
+.account-orders-table tbody tr.is-selected { background: #fff8f4; }
+.order-status-badge { border-radius: 999px; display: inline-block; font-size: 9px; font-weight: 700; padding: 5px 9px; white-space: nowrap; }
+.status-pending { background: #fff3e0; color: #a96814; }
+.status-confirmed { background: #e7f2ff; color: #2a64a8; }
+.status-shipping { background: #efe9ff; color: #6545b5; }
+.status-completed { background: #e7f7ee; color: #26825a; }
+.status-cancelled { background: #f4e8e8; color: #a34d4d; }
+.account-alert { background: #fff7f1; border: 1px solid #f6dcca; border-radius: 9px; color: #9a5a36; font-size: 11px; margin-top: 14px; padding: 10px 13px; }
+
+.account-order-detail { padding: 20px 22px; }
+.order-detail-head { align-items: flex-start; border-bottom: 1px solid #f1e6df; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; }
+.order-detail-head h3 { font-size: 14px; font-weight: 800; margin-bottom: 3px; }
+.order-detail-head p { color: var(--muted); font-size: 10px; margin-bottom: 0; }
+.account-order-meta { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
+.account-order-meta > div { min-width: 0; }
+.account-order-meta > div.is-wide { grid-column: 1 / -1; }
+.account-order-meta span { color: #92939a; display: block; font-size: 9px; margin-bottom: 2px; }
+.account-order-meta strong { display: block; font-size: 11px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.account-order-items { margin-bottom: 4px; }
+.account-order-items thead th { border-bottom-color: #eee7e2; color: #8a8b91; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.account-order-items tbody td { border-top-color: #f2efec; font-size: 11px; }
+.account-order-totals { border-top: 1px dashed #eadfd8; margin-top: 12px; padding-top: 12px; }
+.account-order-totals > div { align-items: center; display: flex; font-size: 11px; justify-content: space-between; padding: 3px 0; }
+.account-order-totals span { color: var(--muted); }
+.account-order-totals .is-total { border-top: 1px solid #f1e6df; margin-top: 6px; padding-top: 9px; }
+.account-order-totals .is-total strong { color: var(--accent-dark); font-size: 15px; font-weight: 800; }
+.account-order-detail > .text-link { display: inline-block; font-size: 10px; margin-top: 14px; }
+
+@media (max-width: 575px) {
+    .account-order-meta { grid-template-columns: 1fr; }
+    .voucher-count { white-space: normal; }
+}
+

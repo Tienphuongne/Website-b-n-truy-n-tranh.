@@ -11,13 +11,17 @@ class CheckoutController extends BaseController
         $coupon = null;
         $discount = 0;
         $orderComplete = filter_input(INPUT_GET, 'success', FILTER_VALIDATE_INT) ?: 0;
+        $userId = !empty($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : 0;
+        $userEmail = (string) ($_SESSION['user']['email'] ?? '');
+        $voucherSummary = ['available' => 0, 'used' => 0, 'total' => 0, 'codes' => []];
 
         $savedAddresses = [];
-        if (!empty($_SESSION['user']['id'])) {
+        if ($userId > 0) {
             try {
-                $savedAddresses = (new OrderModel())->getSavedAddresses($_SESSION['user']['id']);
+                $savedAddresses = (new OrderModel())->getSavedAddresses($userId);
+                $voucherSummary = (new CouponModel())->getAvailabilityForUser($userId, $userEmail);
             } catch (PDOException | RuntimeException $exception) {
-                // Không làm gián đoạn thanh toán nếu không tải được địa chỉ đã dùng.
+                // Không làm gián đoạn thanh toán nếu không tải được địa chỉ / voucher.
             }
         }
         $customer = [
@@ -42,7 +46,9 @@ class CheckoutController extends BaseController
                     $subtotal = $this->subtotal($cartItems);
                     $coupon = (new CouponModel())->findValidByCode(
                         request_string($_POST, 'coupon'),
-                        $subtotal
+                        $subtotal,
+                        $userId,
+                        $userEmail
                     );
                     if (!$coupon) {
                         unset($_SESSION['coupon']);
@@ -86,7 +92,9 @@ class CheckoutController extends BaseController
                     if (!empty($_SESSION['coupon'])) {
                         $coupon = (new CouponModel())->findValidByCode(
                             $_SESSION['coupon'],
-                            $this->subtotal($cartItems)
+                            $this->subtotal($cartItems),
+                            $userId,
+                            $userEmail
                         );
                         if (!$coupon) {
                             unset($_SESSION['coupon']);
@@ -117,7 +125,9 @@ class CheckoutController extends BaseController
             if (!empty($_SESSION['coupon']) && $items) {
                 $coupon = (new CouponModel())->findValidByCode(
                     $_SESSION['coupon'],
-                    $this->subtotal($items)
+                    $this->subtotal($items),
+                    $userId,
+                    $userEmail
                 );
                 if (!$coupon) {
                     unset($_SESSION['coupon']);

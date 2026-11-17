@@ -10,9 +10,14 @@ class AccountController extends BaseController
         }
 
         $userId = (int) $_SESSION['user']['id'];
+        $userEmail = (string) ($_SESSION['user']['email'] ?? '');
         $tab = $_GET['tab'] ?? 'profile';
         $orders = [];
         $orderDetails = [];
+        $selectedOrder = null;
+        $requestedOrderId = !empty($_GET['order']) ? (int) $_GET['order'] : 0;
+        $orderNotFound = false;
+        $voucherSummary = ['available' => 0, 'used' => 0, 'total' => 0, 'codes' => []];
         $databaseError = null;
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -56,12 +61,22 @@ class AccountController extends BaseController
         }
 
         try {
-            $orders = (new OrderModel())->getForUser($userId);
-            if ($tab === 'orders' && !empty($_GET['order'])) {
-                $orderDetails = (new OrderModel())->getDetailsForUser(
-                    (int) $_GET['order'],
-                    $userId
-                );
+            $orderModel = new OrderModel();
+            $orders = $orderModel->getForUser($userId, $userEmail);
+            $voucherSummary = (new CouponModel())->getAvailabilityForUser($userId, $userEmail);
+
+            if ($tab === 'orders' && $requestedOrderId > 0) {
+                foreach ($orders as $order) {
+                    if ((int) $order['id'] === $requestedOrderId) {
+                        $selectedOrder = $order;
+                        break;
+                    }
+                }
+                if ($selectedOrder) {
+                    $orderDetails = $orderModel->getDetailsForUser($requestedOrderId, $userId, $userEmail);
+                } else {
+                    $orderNotFound = true;
+                }
             }
         } catch (PDOException | RuntimeException $exception) {
             error_log($exception->getMessage());

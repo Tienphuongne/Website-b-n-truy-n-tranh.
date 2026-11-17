@@ -6,8 +6,9 @@
  * Cách chạy (từ thư mục gốc dự án):
  *   C:\laragon\bin\php\php-8.1.10-Win32-vs16-x64\php.exe database\seed.php
  *
- * Script chỉ xoá và nạp lại các bảng danh mục sản phẩm
- * (categories, genres, authors, publishers, products, product_genres).
+ * Script xoá và nạp lại các bảng danh mục sản phẩm
+ * (categories, genres, authors, publishers, products, product_genres),
+ * đồng thời bổ sung voucher mẫu nếu mã chưa tồn tại.
  * Dữ liệu người dùng, đơn hàng, đánh giá được giữ nguyên.
  */
 
@@ -132,8 +133,22 @@ try {
     exit(1);
 }
 
+$sampleCoupons = [
+    ['TTV10K', 'fixed', 10000.00, 100000.00, 50],
+    ['SAO15', 'percent', 15.00, 150000.00, 30],
+    ['DOC50K', 'fixed', 50000.00, 300000.00, 20],
+];
+$insertCoupon = $pdo->prepare(
+    "INSERT IGNORE INTO coupons
+        (code, discount_type, discount_value, minimum_order, usage_limit, is_active, created_at)
+     VALUES (?, ?, ?, ?, ?, 1, NOW())"
+);
+foreach ($sampleCoupons as $coupon) {
+    $insertCoupon->execute($coupon);
+}
+
 $counts = [];
-foreach (['categories', 'genres', 'authors', 'publishers', 'products', 'product_genres'] as $table) {
+foreach (['categories', 'genres', 'authors', 'publishers', 'products', 'product_genres', 'coupons'] as $table) {
     $counts[$table] = (int) $pdo->query("SELECT COUNT(*) FROM $table")->fetchColumn();
 }
 

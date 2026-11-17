@@ -121,9 +121,37 @@
                     <div class="checkout-product"><span><?= e($item['name']) ?> <small>× <?= (int) $item['quantity'] ?></small></span><strong><?= number_format((float) $item['sale_price'] * (int) $item['quantity'], 0, ',', '.') ?>₫</strong></div>
                 <?php endforeach; ?>
                 <div class="coupon-entry">
-                    <label class="form-label" for="coupon">Mã giảm giá</label>
+                    <div class="coupon-entry-head">
+                        <label class="form-label" for="coupon">Mã giảm giá</label>
+                        <?php if ($userId > 0): ?>
+                            <span class="voucher-count" title="Voucher còn dùng được, đã trừ các voucher bạn đã dùng">
+                                <span aria-hidden="true">✦</span><strong><?= (int) $voucherSummary['available'] ?></strong> voucher khả dụng
+                            </span>
+                        <?php else: ?>
+                            <span class="voucher-count voucher-count-muted">Đăng nhập để xem voucher</span>
+                        <?php endif; ?>
+                    </div>
                     <div class="coupon-input-row"><input class="form-control" id="coupon" name="coupon" placeholder="Nhập mã giảm giá" value="<?= e($_SESSION['coupon'] ?? '') ?>"><button class="btn btn-outline-primary" type="submit" name="apply_coupon" value="1" formnovalidate>Áp dụng</button></div>
                     <?php if ($coupon): ?><small class="coupon-applied">Đã áp dụng <?= e($coupon['code']) ?></small><?php endif; ?>
+                    <?php if ($userId > 0): ?>
+                        <small class="voucher-meta">Đang có <?= (int) $voucherSummary['total'] ?> voucher hoạt động · Bạn đã dùng <?= (int) $voucherSummary['used'] ?></small>
+                        <?php if (!empty($voucherSummary['codes'])): ?>
+                            <div class="voucher-code-list">
+                                <?php foreach ($voucherSummary['codes'] as $voucherCode): ?>
+                                    <?php
+                                    $voucherLabel = $voucherCode['discount_type'] === 'percent'
+                                        ? rtrim(rtrim(number_format((float) $voucherCode['discount_value'], 1, '.', ''), '0'), '.') . '%'
+                                        : number_format((float) $voucherCode['discount_value'], 0, ',', '.') . '₫';
+                                    ?>
+                                    <button type="button" class="voucher-code-chip" data-voucher-code="<?= e($voucherCode['code']) ?>" title="Điền mã <?= e($voucherCode['code']) ?>">
+                                        <strong><?= e($voucherCode['code']) ?></strong><small><?= e($voucherLabel) ?></small>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <small class="voucher-meta">Chưa có voucher phù hợp cho bạn. Hãy quay lại sau nhé.</small>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
                 <div class="summary-row"><span>Tạm tính</span><strong><?= number_format($subtotal, 0, ',', '.') ?>₫</strong></div>
                 <div class="summary-row"><span>Phí vận chuyển</span><strong>30.000₫</strong></div>
@@ -412,6 +440,21 @@
 
                 renderLocalChips();
                 updateAddressHint();
+
+                var couponInput = document.getElementById('coupon');
+                document.querySelectorAll('[data-voucher-code]').forEach(function (chip) {
+                    chip.addEventListener('click', function () {
+                        if (!couponInput) {
+                            return;
+                        }
+                        couponInput.value = chip.getAttribute('data-voucher-code') || '';
+                        couponInput.focus();
+                        document.querySelectorAll('[data-voucher-code]').forEach(function (item) {
+                            item.classList.remove('active');
+                        });
+                        chip.classList.add('active');
+                    });
+                });
             })();
         </script>
     <?php endif; ?>
