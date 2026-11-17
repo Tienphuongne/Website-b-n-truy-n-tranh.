@@ -1,17 +1,98 @@
-<section class="hero-section">
+<?php
+$heroSlides = array_slice(!empty($featured) ? $featured : $latest, 0, 4);
+$splitHeroTitle = static function ($name) {
+    $name = trim((string) $name);
+    $separator = mb_strpos($name, ' - ');
+    if ($separator === false) {
+        return [$name, ''];
+    }
+
+    return [
+        trim(mb_substr($name, 0, $separator)),
+        trim(mb_substr($name, $separator + 3)),
+    ];
+};
+?>
+<section class="hero-section hero-carousel" data-hero-carousel data-interval="6500" aria-roledescription="carousel" aria-label="Truyện nổi bật của tuần">
     <div class="container hero-content">
-        <div class="hero-copy">
-            <span class="eyebrow">MỞ TRANG SÁCH, MỞ THẾ GIỚI</span>
-            <h1>Mỗi câu chuyện<br><span>là một cuộc phiêu lưu.</span></h1>
-            <p>Chọn cuốn truyện tiếp theo cho bộ sưu tập của bạn — từ những hành trình kỳ ảo đến câu chuyện đời thường đầy cảm xúc.</p>
-            <a class="btn btn-primary btn-lg" href="<?= e(url('products')) ?>">Khám phá ngay <span aria-hidden="true">→</span></a>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-            <div class="hero-spark spark-one">✦</div><div class="hero-spark spark-two">✧</div>
-            <div class="hero-book book-back"></div><div class="hero-book book-front"><span>TRUYEN<br>THUVI<br>STORY</span></div>
-            <div class="hero-orbit"></div>
-        </div>
-        <div class="hero-caption">GÓC ĐỌC CỦA BẠN</div>
+        <?php if (!empty($heroSlides)): ?>
+            <div class="hero-slides">
+                <?php foreach ($heroSlides as $slideIndex => $slide): ?>
+                    <?php
+                    [$slideSeries, $slideVolume] = $splitHeroTitle($slide['name'] ?? '');
+                    $slideActive = $slideIndex === 0;
+                    $slideStock = (int) ($slide['stock_quantity'] ?? 0);
+                    $slideHasDiscount = !empty($slide['original_price']) && $slide['original_price'] > $slide['sale_price'];
+                    $slideDiscount = $slideHasDiscount
+                        ? (int) round((1 - $slide['sale_price'] / $slide['original_price']) * 100)
+                        : 0;
+                    $slideSave = $slideHasDiscount ? (float) $slide['original_price'] - (float) $slide['sale_price'] : 0;
+                    $slideDescription = (string) ($slide['short_description'] ?? '');
+                    if (mb_strlen($slideDescription) > 150) {
+                        $slideDescription = rtrim(mb_substr($slideDescription, 0, 147), " .,;:") . '…';
+                    }
+                    $slideUrl = url('product/detail/' . (int) $slide['id']);
+                    ?>
+                    <article class="hero-slide<?= $slideActive ? ' is-active' : '' ?>" data-hero-slide role="group" aria-roledescription="slide" aria-label="<?= $slideIndex + 1 ?> / <?= count($heroSlides) ?>: <?= e($slide['name']) ?>"<?= $slideActive ? '' : ' aria-hidden="true"' ?>>
+                        <div class="hero-copy">
+                            <span class="eyebrow"><?= e($slide['category_name'] ?? 'Truyện nổi bật') ?><?php if (!empty($slide['author_name'])): ?> · <?= e($slide['author_name']) ?><?php endif; ?></span>
+                            <h1><?= e($slideSeries) ?><?php if ($slideVolume !== ''): ?><br><span><?= e($slideVolume) ?></span><?php endif; ?></h1>
+                            <?php if ($slideDescription !== ''): ?><p><?= e($slideDescription) ?></p><?php endif; ?>
+                            <div class="hero-price">
+                                <strong><?= number_format((float) $slide['sale_price'], 0, ',', '.') ?>₫</strong>
+                                <?php if ($slideHasDiscount): ?>
+                                    <del><?= number_format((float) $slide['original_price'], 0, ',', '.') ?>₫</del>
+                                    <span class="hero-save">Tiết kiệm <?= number_format($slideSave, 0, ',', '.') ?>₫</span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="hero-actions">
+                                <a class="btn btn-primary btn-lg" href="<?= e($slideUrl) ?>">Xem chi tiết <span aria-hidden="true">→</span></a>
+                                <span class="hero-stock<?= $slideStock < 1 ? ' is-out' : '' ?>"><?= $slideStock < 1 ? 'Tạm hết hàng' : 'Còn ' . $slideStock . ' cuốn' ?></span>
+                            </div>
+                        </div>
+                        <div class="hero-art">
+                            <div class="hero-spark spark-one" aria-hidden="true">✦</div><div class="hero-spark spark-two" aria-hidden="true">✧</div>
+                            <div class="hero-orbit" aria-hidden="true"></div>
+                            <div class="hero-book book-back" aria-hidden="true"></div>
+                            <a class="hero-book-cover" href="<?= e($slideUrl) ?>" aria-label="Xem chi tiết <?= e($slide['name']) ?>">
+                                <?php if (!empty($slide['cover_image'])): ?>
+                                    <img src="<?= e(product_image_url($slide['cover_image'])) ?>" alt="Bìa truyện <?= e($slide['name']) ?>" <?= $slideActive ? 'fetchpriority="high"' : 'loading="lazy"' ?>>
+                                <?php else: ?>
+                                    <span class="hero-cover-placeholder"><span>✦</span><small>TRUYENTHUVI</small></span>
+                                <?php endif; ?>
+                                <?php if ($slideDiscount > 0): ?><span class="hero-cover-badge">-<?= $slideDiscount ?>%</span><?php endif; ?>
+                            </a>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+            <?php if (count($heroSlides) > 1): ?>
+                <div class="hero-controls">
+                    <button class="hero-arrow" type="button" data-hero-prev aria-label="Truyện trước"><span aria-hidden="true">←</span></button>
+                    <div class="hero-dots">
+                        <?php foreach ($heroSlides as $slideIndex => $slide): ?>
+                            <button class="hero-dot<?= $slideIndex === 0 ? ' is-active' : '' ?>" type="button" data-hero-dot="<?= $slideIndex ?>" aria-label="Xem truyện <?= $slideIndex + 1 ?>: <?= e($slide['name']) ?>"<?= $slideIndex === 0 ? ' aria-current="true"' : '' ?>></button>
+                        <?php endforeach; ?>
+                    </div>
+                    <button class="hero-arrow" type="button" data-hero-next aria-label="Truyện tiếp theo"><span aria-hidden="true">→</span></button>
+                    <span class="hero-count"><span data-hero-count>01 / <?= str_pad((string) count($heroSlides), 2, '0', STR_PAD_LEFT) ?></span></span>
+                </div>
+                <div class="hero-progress" aria-hidden="true"><span></span></div>
+            <?php endif; ?>
+        <?php else: ?>
+            <div class="hero-copy">
+                <span class="eyebrow">MỞ TRANG SÁCH, MỞ THẾ GIỚI</span>
+                <h1>Mỗi câu chuyện<br><span>là một cuộc phiêu lưu.</span></h1>
+                <p>Chọn cuốn truyện tiếp theo cho bộ sưu tập của bạn — từ những hành trình kỳ ảo đến câu chuyện đời thường đầy cảm xúc.</p>
+                <a class="btn btn-primary btn-lg" href="<?= e(url('products')) ?>">Khám phá ngay <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+                <div class="hero-spark spark-one">✦</div><div class="hero-spark spark-two">✧</div>
+                <div class="hero-book book-back"></div><div class="hero-book book-front"><span>TRUYEN<br>THUVI<br>STORY</span></div>
+                <div class="hero-orbit"></div>
+            </div>
+            <div class="hero-caption">GÓC ĐỌC CỦA BẠN</div>
+        <?php endif; ?>
     </div>
 </section>
 
