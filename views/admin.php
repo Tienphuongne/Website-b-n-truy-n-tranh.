@@ -21,7 +21,7 @@
             <a class="admin-store-link" href="<?= e(url('')) ?>">← Về cửa hàng</a>
         </aside>
         <main class="admin-main">
-            <header class="admin-topbar"><div><span class="eyebrow">TRUYENTHUVI / ADMIN</span><h1><?= e($title ?? 'Quản trị') ?></h1></div><div class="admin-user"><?= e($_SESSION['user']['name'] ?? 'Quản trị viên') ?></div></header>
+            <header class="admin-topbar d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap"><div><span class="eyebrow">TRUYENTHUVI / ADMIN</span><h1><?= e($title ?? 'Quản trị') ?></h1></div><div class="admin-topbar-actions d-flex align-items-center gap-3"><a class="btn btn-outline-primary btn-sm" href="<?= e(url('')) ?>">Xem cửa hàng</a><div class="admin-user"><?= e($_SESSION['user']['name'] ?? 'Quản trị viên') ?></div></div></header>
             <div class="admin-content">
                 <?php foreach (take_flash_messages() as $notice): ?><div class="alert alert-<?= e($notice['type']) ?>"><?= e($notice['message']) ?></div><?php endforeach; ?>
                 <?php if (!empty($databaseError)): ?><div class="alert alert-warning"><?= e($databaseError) ?></div><?php endif; ?>

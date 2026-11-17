@@ -34,7 +34,7 @@ class AuthController extends BaseController
                         'phone' => $user['phone'],
                         'role' => $user['role'],
                     ];
-                    redirect('account');
+                    redirect($user['role'] === 'admin' ? 'admin' : 'account');
                 }
                 flash('danger', 'Email/tên đăng nhập hoặc mật khẩu không chính xác.');
             } catch (PDOException | RuntimeException $exception) {
