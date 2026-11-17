@@ -124,6 +124,15 @@ class ProductsController extends BaseController
         if ($filters['in_stock']) {
             $chips[] = $this->filterChip('Chỉ còn hàng', $this->filterUrl($filters, 'in_stock'));
         }
+        $sortLabels = [
+            'best_selling' => 'Bán chạy',
+            'rating' => 'Đánh giá cao',
+            'price_asc' => 'Giá tăng dần',
+            'price_desc' => 'Giá giảm dần',
+        ];
+        if (isset($sortLabels[$filters['sort']])) {
+            $chips[] = $this->filterChip('Sắp xếp: ' . $sortLabels[$filters['sort']], $this->filterUrl($filters, 'sort'));
+        }
 
         return $chips;
     }

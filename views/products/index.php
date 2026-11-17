@@ -1,7 +1,7 @@
 <section class="container section-space">
     <div class="page-heading">
         <div><span class="eyebrow">BỘ SƯU TẬP</span><h1><?= e($heading ?? 'Tất cả truyện tranh') ?></h1><p><?= e($subheading ?? 'Tìm câu chuyện phù hợp với bạn.') ?></p></div>
-        <span class="result-count"><?= (int) ($result['total'] ?? 0) ?> sản phẩm</span>
+        <span class="result-count"><?= (int) ($result['total'] ?? 0) ?> truyện</span>
     </div>
     <div class="catalog-layout">
         <aside class="filter-panel">
@@ -74,7 +74,11 @@
                     };
                     ?>
                     <nav class="pagination-wrap" aria-label="Phân trang">
-                        <a class="page-number <?= $currentPage <= 1 ? 'disabled' : '' ?>" href="<?= e($pageUrl(max(1, $currentPage - 1))) ?>" aria-label="Trang trước">‹</a>
+                        <?php if ($currentPage <= 1): ?>
+                            <span class="page-number disabled" aria-disabled="true" aria-label="Trang trước">‹</span>
+                        <?php else: ?>
+                            <a class="page-number" href="<?= e($pageUrl($currentPage - 1)) ?>" aria-label="Trang trước">‹</a>
+                        <?php endif; ?>
                         <?php if ($windowStart > 1): ?>
                             <a class="page-number" href="<?= e($pageUrl(1)) ?>">1</a>
                             <?php if ($windowStart > 2): ?><span class="page-ellipsis">…</span><?php endif; ?>
@@ -86,7 +90,11 @@
                             <?php if ($windowEnd < $pages - 1): ?><span class="page-ellipsis">…</span><?php endif; ?>
                             <a class="page-number" href="<?= e($pageUrl($pages)) ?>"><?= $pages ?></a>
                         <?php endif; ?>
-                        <a class="page-number <?= $currentPage >= $pages ? 'disabled' : '' ?>" href="<?= e($pageUrl(min($pages, $currentPage + 1))) ?>" aria-label="Trang sau">›</a>
+                        <?php if ($currentPage >= $pages): ?>
+                            <span class="page-number disabled" aria-disabled="true" aria-label="Trang sau">›</span>
+                        <?php else: ?>
+                            <a class="page-number" href="<?= e($pageUrl($currentPage + 1)) ?>" aria-label="Trang sau">›</a>
+                        <?php endif; ?>
                     </nav>
                 <?php endif; ?>
             <?php else: ?>
