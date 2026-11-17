@@ -10,7 +10,10 @@ $statusLabels = [
 ];
 $paymentLabels = [
     'cod' => 'Thanh toán khi nhận hàng (COD)',
-    'bank_transfer' => 'Chuyển khoản ngân hàng',
+    'bank_transfer' => 'Chuyển khoản ngân hàng qua mã QR',
+    'vnpay' => 'VNPAY',
+    'momo' => 'MoMo',
+    'card' => 'Thẻ Visa / Master / JCB / Napas',
 ];
 $daily = $report['daily'] ?? [];
 $statuses = $report['statuses'] ?? [];
