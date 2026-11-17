@@ -208,6 +208,15 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .quick-address-list { display: flex; flex-wrap: wrap; gap: 7px; }
 .quick-address-chip { background: #fff; border: 1px solid #f0d9d0; border-radius: 999px; color: #7d5144; cursor: pointer; font-size: 10px; font-weight: 600; padding: 6px 11px; transition: border-color .15s ease, background .15s ease, color .15s ease; }
 .quick-address-chip:hover, .quick-address-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.quick-address-item { display: inline-flex; align-items: center; }
+.quick-address-item .quick-address-chip { border-radius: 999px 0 0 999px; padding-right: 7px; }
+.quick-address-remove { background: #fff; border: 1px solid #f0d9d0; border-left: 0; border-radius: 0 999px 999px 0; color: #a98274; cursor: pointer; font-size: 13px; line-height: 1; padding: 6px 9px; }
+.quick-address-remove:hover { background: #c7352b; border-color: #c7352b; color: #fff; }
+.quick-address-save { background: #fff; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent-dark); cursor: pointer; font-size: 10px; font-weight: 700; margin-left: auto; padding: 6px 11px; white-space: nowrap; }
+.quick-address-save:hover { background: var(--accent); color: #fff; }
+.quick-address-message { color: #368b68; font-size: 10px; margin: -9px 0 14px; }
+.field-error { color: #c7352b; display: block; font-size: 10px; margin-top: 4px; }
+.field-hint { color: #a1a2a7; display: block; font-size: 10px; margin-top: 4px; }
 .checkout-card .form-select { font-size: 12px; }
 .checkout-subheading { border-top: 1px solid var(--line); margin-top: 29px; padding-top: 23px; }
 .payment-methods { display: flex; flex-direction: column; gap: 10px; }
