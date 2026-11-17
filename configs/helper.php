@@ -153,10 +153,14 @@ if (!function_exists('product_image_url')) {
         if (str_starts_with($coverImage, 'http://') || str_starts_with($coverImage, 'https://')) {
             return $coverImage;
         }
+        // Thêm số phiên bản để trình duyệt tải lại bìa sau khi sửa file SVG.
+        $appendVersion = static function ($url) {
+            return str_contains($url, '?') ? $url . '&v=2' : $url . '?v=2';
+        };
         if (str_starts_with($coverImage, 'assets/')) {
-            return BASE_URL . ltrim($coverImage, '/');
+            return $appendVersion(BASE_URL . ltrim($coverImage, '/'));
         }
-        return BASE_ASSETS_UPLOADS . ltrim($coverImage, '/\\');
+        return $appendVersion(BASE_ASSETS_UPLOADS . ltrim($coverImage, '/\\'));
     }
 }
 

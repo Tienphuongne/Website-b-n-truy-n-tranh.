@@ -126,10 +126,11 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .product-card { border: 1px solid #efeeec; border-radius: 12px; display: flex; flex-direction: column; min-width: 0; overflow: hidden; transition: box-shadow .2s ease, transform .2s ease; }
 .product-card:hover { box-shadow: var(--shadow); transform: translateY(-4px); }
 .product-cover { background: #f2efeb; display: block; height: 220px; overflow: hidden; position: relative; }
-.product-cover img { height: 100%; object-fit: cover; transition: filter .3s ease, opacity .3s ease, transform .3s ease; width: 100%; }
+.product-cover img { height: 100%; object-fit: cover; position: relative; transition: filter .3s ease, opacity .3s ease, transform .3s ease; width: 100%; z-index: 1; }
+.product-cover .cover-placeholder { inset: 0; position: absolute; }
 .product-card:hover .product-cover img { transform: scale(1.04); }
 .product-card.is-out-of-stock .product-cover img, .product-card.is-out-of-stock .cover-placeholder { filter: grayscale(.7); opacity: .65; }
-.product-badge { background: var(--accent); border-radius: 0 0 7px 0; color: #fff; font-size: 9px; font-weight: 700; left: 0; padding: 5px 8px; position: absolute; top: 0; }
+.product-badge { background: var(--accent); border-radius: 0 0 7px 0; color: #fff; font-size: 9px; font-weight: 700; left: 0; padding: 5px 8px; position: absolute; top: 0; z-index: 2; }
 .discount-badge { background: #292a2e; border-radius: 7px 0 0 7px; left: auto; right: 0; }
 .stock-badge { background: #6f7075; border-radius: 0 7px 0 0; bottom: 0; top: auto; }
 .product-info { display: flex; flex: 1; flex-direction: column; padding: 13px; }
@@ -150,8 +151,9 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .page-ellipsis { align-items: center; color: #a1a2a7; display: inline-flex; font-size: 11px; height: 34px; justify-content: center; width: 20px; }
 .breadcrumb-line { color: #92939a; display: flex; font-size: 10px; gap: 9px; margin-bottom: 24px; }
 .detail-layout { align-items: start; display: grid; gap: 54px; grid-template-columns: minmax(260px, 390px) 1fr; }
-.detail-cover { background: #f5f2ee; border-radius: 14px; height: 485px; overflow: hidden; }
-.detail-cover img { height: 100%; object-fit: cover; width: 100%; }
+.detail-cover { background: #f5f2ee; border-radius: 14px; height: 485px; overflow: hidden; position: relative; }
+.detail-cover img { height: 100%; object-fit: cover; position: relative; width: 100%; z-index: 1; }
+.detail-cover .cover-placeholder { inset: 0; position: absolute; }
 .detail-placeholder { min-height: 100%; }
 .detail-info h1 { font-size: 32px; font-weight: 800; letter-spacing: -.05em; margin-bottom: 8px; }
 .detail-byline { color: #808188; font-size: 11px; }
