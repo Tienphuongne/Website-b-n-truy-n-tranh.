@@ -18,7 +18,8 @@ if (!empty($discounted)) {
 } elseif (!empty($featured)) {
     $promoProduct = $featured[0];
 }
-$lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : [];
+$lovedFallback = !empty($bestSellers) ? $bestSellers : $featured;
+$lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lovedFallback, 0, 3);
 ?>
 <section class="hero-section hero-carousel" data-hero-carousel data-interval="6500" aria-roledescription="carousel" aria-label="Truyện nổi bật của tuần">
     <div class="container hero-content">
@@ -229,6 +230,7 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : [];
                 <?php
                 $lovedUrl = url('product/detail/' . (int) $product['id']);
                 $lovedRating = (float) ($product['avg_rating'] ?? 0);
+                $lovedReviews = (int) ($product['review_count'] ?? 0);
                 ?>
                 <a class="loved-card" href="<?= e($lovedUrl) ?>">
                     <span class="loved-rank"><?= str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) ?></span>
@@ -242,7 +244,7 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : [];
                     <span class="loved-info">
                         <strong><?= e($product['name']) ?></strong>
                         <small><?= e($product['author_name'] ?? 'Đang cập nhật') ?></small>
-                        <span class="loved-meta">★ <?= number_format($lovedRating, 1) ?> · <?= (int) ($product['review_count'] ?? 0) ?> đánh giá</span>
+                        <span class="loved-meta"><?php if ($lovedReviews > 0): ?>★ <?= number_format($lovedRating, 1) ?> · <?= $lovedReviews ?> đánh giá<?php else: ?>✦ Đang cập nhật đánh giá<?php endif; ?></span>
                         <b><?= number_format((float) $product['sale_price'], 0, ',', '.') ?>₫</b>
                     </span>
                 </a>
