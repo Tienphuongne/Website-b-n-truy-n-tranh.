@@ -82,7 +82,6 @@ class CartController extends BaseController
             flash('warning', 'Sản phẩm không còn khả dụng và đã được xóa khỏi giỏ.');
         } else {
             $_SESSION['cart'][$id] = min(max(1, $quantity), (int) $product['stock_quantity']);
-            flash('success', 'Đã cập nhật giỏ hàng.');
         }
         redirect('cart');
     }
