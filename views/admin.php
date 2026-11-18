@@ -7,7 +7,7 @@ $jsVersion = is_file(PATH_ROOT . 'assets/js/app.js') ? (string) filemtime(PATH_R
 <html lang="vi">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= e($title ?? 'Quản trị') ?> | TruyenThuVi Admin</title>
+    <title><?= e($title ?? 'Quản trị') ?> | Quản trị Truyện Thu Vị</title>
     <link rel="icon" type="image/svg+xml" href="<?= e(PATH_ASSETS . 'images/favicon.svg') ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= e(PATH_CSS) ?>app.css?v=<?= e($cssVersion) ?>" rel="stylesheet">
@@ -27,7 +27,7 @@ $jsVersion = is_file(PATH_ROOT . 'assets/js/app.js') ? (string) filemtime(PATH_R
             <a class="admin-store-link" href="<?= e(url('')) ?>">← Về cửa hàng</a>
         </aside>
         <main class="admin-main">
-            <header class="admin-topbar d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap"><div><span class="eyebrow">TRUYENTHUVI / ADMIN</span><h1><?= e($title ?? 'Quản trị') ?></h1></div><div class="admin-topbar-actions d-flex align-items-center gap-3"><a class="btn btn-outline-primary btn-sm" href="<?= e(url('')) ?>">Xem cửa hàng</a><div class="admin-user"><?= e($_SESSION['user']['name'] ?? 'Quản trị viên') ?></div></div></header>
+            <header class="admin-topbar d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap"><div><span class="eyebrow">TRUYENTHUVI / QUẢN TRỊ</span><h1><?= e($title ?? 'Quản trị') ?></h1></div><div class="admin-topbar-actions d-flex align-items-center gap-3"><a class="btn btn-outline-primary btn-sm" href="<?= e(url('')) ?>">Xem cửa hàng</a><div class="admin-user"><?= e($_SESSION['user']['name'] ?? 'Quản trị viên') ?></div></div></header>
             <div class="admin-content">
                 <?php foreach (take_flash_messages() as $notice): ?><div class="alert alert-<?= e($notice['type']) ?>"><?= e($notice['message']) ?></div><?php endforeach; ?>
                 <?php if (!empty($databaseError)): ?><div class="alert alert-warning"><?= e($databaseError) ?></div><?php endif; ?>
