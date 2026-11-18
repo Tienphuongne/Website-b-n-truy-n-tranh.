@@ -26,6 +26,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    document.querySelectorAll('[data-quantity-step]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var input = button.form && button.form.querySelector('[data-cart-quantity]');
+            if (!input) return;
+
+            var min = Number(input.min) || 1;
+            var max = input.max ? Number(input.max) : Infinity;
+            var step = Number(input.step) || 1;
+            var current = Number(input.value);
+            if (!Number.isFinite(current)) current = min;
+
+            var next = Math.min(max, Math.max(min, current + Number(button.dataset.quantityStep) * step));
+            if (next === current) return;
+
+            input.value = String(next);
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+
     document.querySelectorAll('form').forEach(function (form) {
         form.addEventListener('submit', function (event) {
             if (event.defaultPrevented) return;

@@ -18,7 +18,9 @@
                                 <form action="<?= e(url('cart/update')) ?>" method="post" class="quantity-control">
                                     <?= csrf_field() ?><input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>">
                                     <label class="visually-hidden" for="qty-<?= (int) $item['id'] ?>">Số lượng</label>
-                                    <input id="qty-<?= (int) $item['id'] ?>" type="number" name="quantity" min="1" max="<?= max(1, (int) $item['stock_quantity']) ?>" value="<?= (int) $item['quantity'] ?>" data-cart-quantity>
+                                    <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Giảm số lượng" aria-controls="qty-<?= (int) $item['id'] ?>">−</button>
+                                    <input id="qty-<?= (int) $item['id'] ?>" type="number" name="quantity" min="1" max="<?= max(1, (int) $item['stock_quantity']) ?>" step="1" value="<?= (int) $item['quantity'] ?>" data-cart-quantity>
+                                    <button class="quantity-step" type="button" data-quantity-step="1" aria-label="Tăng số lượng" aria-controls="qty-<?= (int) $item['id'] ?>">+</button>
                                 </form>
                                 <form action="<?= e(url('cart/remove')) ?>" method="post" data-confirm="Bạn có chắc muốn xóa truyện này khỏi giỏ hàng?">
                                     <?= csrf_field() ?><input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>">

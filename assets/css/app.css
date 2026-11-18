@@ -189,8 +189,12 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .cart-item-info > strong, .cart-line-total { color: var(--accent-dark); font-size: 12px; }
 .cart-line-total { align-self: start; padding-top: 5px; }
 .cart-item-controls { align-items: center; display: flex; gap: 12px; margin-top: 12px; }
-.quantity-control { align-items: center; display: flex; gap: 6px; }
-.quantity-control input { border: 1px solid var(--line); border-radius: 6px; font-size: 11px; height: 32px; padding: 5px; width: 53px; }
+.quantity-control { align-items: center; display: flex; gap: 4px; }
+.quantity-control input { appearance: textfield; -moz-appearance: textfield; border: 1px solid var(--line); border-radius: 6px; font-size: 11px; height: 32px; padding: 5px; text-align: center; width: 45px; }
+.quantity-control input::-webkit-inner-spin-button, .quantity-control input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.quantity-step { align-items: center; background: var(--soft); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); cursor: pointer; display: inline-flex; font-size: 15px; height: 32px; justify-content: center; line-height: 1; padding: 0; width: 30px; }
+.quantity-step:hover { border-color: var(--accent); color: var(--accent-dark); }
+.quantity-step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn-remove { background: transparent; border: 0; color: #a1a1a6; font-size: 10px; }
 .btn-remove:hover { color: #c7352b; }
 .summary-card, .checkout-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
