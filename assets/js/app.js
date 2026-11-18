@@ -15,6 +15,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    document.querySelectorAll('[data-cart-quantity]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            if (!input.form) return;
+            if (typeof input.form.requestSubmit === 'function') {
+                input.form.requestSubmit();
+            } else {
+                input.form.submit();
+            }
+        });
+    });
+
     document.querySelectorAll('form').forEach(function (form) {
         form.addEventListener('submit', function (event) {
             if (event.defaultPrevented) return;

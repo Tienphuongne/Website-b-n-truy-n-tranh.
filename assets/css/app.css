@@ -191,7 +191,6 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .cart-item-controls { align-items: center; display: flex; gap: 12px; margin-top: 12px; }
 .quantity-control { align-items: center; display: flex; gap: 6px; }
 .quantity-control input { border: 1px solid var(--line); border-radius: 6px; font-size: 11px; height: 32px; padding: 5px; width: 53px; }
-.quantity-control .btn { font-size: 9px; padding: 6px 8px; }
 .btn-remove { background: transparent; border: 0; color: #a1a1a6; font-size: 10px; }
 .btn-remove:hover { color: #c7352b; }
 .summary-card, .checkout-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }

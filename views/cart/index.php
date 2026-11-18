@@ -18,8 +18,7 @@
                                 <form action="<?= e(url('cart/update')) ?>" method="post" class="quantity-control">
                                     <?= csrf_field() ?><input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>">
                                     <label class="visually-hidden" for="qty-<?= (int) $item['id'] ?>">Số lượng</label>
-                                    <input id="qty-<?= (int) $item['id'] ?>" type="number" name="quantity" min="1" max="<?= max(1, (int) $item['stock_quantity']) ?>" value="<?= (int) $item['quantity'] ?>">
-                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Cập nhật</button>
+                                    <input id="qty-<?= (int) $item['id'] ?>" type="number" name="quantity" min="1" max="<?= max(1, (int) $item['stock_quantity']) ?>" value="<?= (int) $item['quantity'] ?>" data-cart-quantity>
                                 </form>
                                 <form action="<?= e(url('cart/remove')) ?>" method="post" data-confirm="Bạn có chắc muốn xóa truyện này khỏi giỏ hàng?">
                                     <?= csrf_field() ?><input type="hidden" name="product_id" value="<?= (int) $item['id'] ?>">
