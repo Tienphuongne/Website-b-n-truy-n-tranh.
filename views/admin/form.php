@@ -3,8 +3,30 @@
     <?php if (empty($databaseError)): ?>
         <form method="post" enctype="multipart/form-data" action="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/' . ($_GET['task'] ?? '') . (isset($_GET['id']) ? '?id=' . (int) $_GET['id'] : ''))) ?>" class="admin-data-form">
             <?= csrf_field() ?>
+            <?php
+            $formValues = $record;
+            foreach (($definition['fields'] ?? []) as $formField) {
+                if (
+                    $formField['type'] === 'select'
+                    && (!isset($formValues[$formField['name']]) || $formValues[$formField['name']] === '')
+                    && isset($formField['default'])
+                ) {
+                    $formValues[$formField['name']] = $formField['default'];
+                }
+            }
+            ?>
             <?php foreach (($definition['fields'] ?? []) as $field): ?>
-                <?php $value = $record[$field['name']] ?? ''; ?>
+                <?php
+                $value = $formValues[$field['name']] ?? '';
+                $currencyCondition = $field['currency_when'] ?? null;
+                $isCurrency = !empty($field['currency']) && (
+                    !$currencyCondition
+                    || (string) ($formValues[$currencyCondition['field']] ?? '') === $currencyCondition['value']
+                );
+                if ($isCurrency && $value !== '') {
+                    $value = rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
+                }
+                ?>
                 <?php if ($field['type'] === 'checkbox'): ?>
                     <label class="form-check admin-checkbox"><input class="form-check-input" type="checkbox" name="<?= e($field['name']) ?>" value="1" <?= !empty($value) ? 'checked' : '' ?>><span class="form-check-label"><?= e($field['label']) ?></span></label>
                 <?php elseif ($field['type'] === 'textarea'): ?>
@@ -45,6 +67,12 @@
                         <div class="admin-cover-preview"><img src="<?= e(product_image_url($record[$field['column']])) ?>" alt="Ảnh hiện tại"></div>
                     <?php endif; ?>
                     <input class="form-control mb-3" id="field-<?= e($field['name']) ?>" type="file" name="<?= e($field['name']) ?><?= $field['type'] === 'file-multiple' ? '[]' : '' ?>" accept="<?= e($field['accept'] ?? 'image/*') ?>" <?= $field['type'] === 'file-multiple' ? 'multiple' : '' ?>>
+                <?php elseif ($field['type'] === 'number' && (!empty($field['currency']) || $currencyCondition)): ?>
+                    <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
+                    <div class="input-group mb-3">
+                        <input class="form-control" id="field-<?= e($field['name']) ?>" type="<?= $isCurrency ? 'text' : 'number' ?>" name="<?= e($field['name']) ?>" value="<?= e($value) ?>" <?= !empty($field['required']) ? 'required' : '' ?> <?= $isCurrency ? 'inputmode="decimal"' : 'step="any" min="0"' ?> data-admin-currency-input <?= $currencyCondition ? 'data-admin-currency-when="' . e($currencyCondition['field'] . '=' . $currencyCondition['value']) . '"' : '' ?>>
+                        <span class="input-group-text" <?= $currencyCondition ? 'data-admin-currency-unit' : '' ?>><?= $isCurrency ? '₫' : '%' ?></span>
+                    </div>
                 <?php else: ?>
                     <?php if ($field['type'] === 'datetime-local' && $value): $value = str_replace(' ', 'T', substr($value, 0, 16)); endif; ?>
                     <label class="form-label" for="field-<?= e($field['name']) ?>"><?= e($field['label']) ?></label>
