@@ -185,7 +185,8 @@ if (!function_exists('csrf_field')) {
 if (!function_exists('verify_csrf_token')) {
     function verify_csrf_token()
     {
-        $submitted = $_POST['_csrf_token'] ?? '';
+        // Form dùng hidden input; các request JSON của chatbot dùng header.
+        $submitted = $_POST['_csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
         $saved = $_SESSION['_csrf_token'] ?? '';
 
         return is_string($submitted) && is_string($saved) && $saved !== ''

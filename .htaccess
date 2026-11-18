@@ -9,7 +9,7 @@ SetEnv DB_NAME manga_house
 
 RewriteEngine On
 
-RewriteRule ^(?:configs|controllers|models|views|database)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:configs|controllers|models|services|views|database)(?:/|$) - [F,L,NC]
 RewriteRule (^|/)\. - [F,L]
 RewriteRule ^assets/uploads/.*\.(?:php[0-9]?|phtml)$ - [F,L,NC]
 

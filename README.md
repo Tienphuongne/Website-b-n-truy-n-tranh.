@@ -15,7 +15,12 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
    DB_PASSWORD=
    DB_NAME=manga_house
    APP_BASE_URL=http://localhost/website-ban-truyen-tranh/
+   AI_API_KEY=
+   AI_MODEL=gemini-3.5-flash-lite
+   AI_MODEL_FALLBACKS=gemini-3.1-flash-lite,gemini-flash-latest
    ```
+
+   Có thể khai báo trực tiếp trong file `.env` (xem `.env.example`). Các biến có sẵn trong môi trường hệ thống/Apache được ưu tiên hơn `.env`. Không đẩy API key thật lên Git.
 
    Khi triển khai tại domain root, đặt `APP_BASE_URL` thành URL root có dấu `/` cuối. Không lưu thông tin mật khẩu thật trong Git.
 
@@ -47,6 +52,17 @@ Các chức năng quản trị chính:
 - Đơn hàng: xem chi tiết khách hàng, sản phẩm, phí vận chuyển/giảm giá và cập nhật trạng thái.
 - Liên hệ: theo dõi và đổi trạng thái tin nhắn từ trang liên hệ.
 - Thống kê: doanh thu 7 ngày gần nhất trên dashboard và báo cáo theo khoảng ngày tại `/admin/reports` (tối đa 5 năm gần nhất).
+
+## Trợ lý hỗ trợ (chatbot AI)
+
+Widget chat xuất hiện ở góc phải màn hình trên mọi trang. Trợ lý dùng Gemini (`AI_MODEL`) để trả lời bằng tiếng Việt, với dữ liệu thật lấy từ cơ sở dữ liệu:
+
+- Tư vấn sản phẩm: tìm truyện theo tên/tác giả, giá, tồn kho, gợi ý bán chạy/mới/giảm giá và đính kèm link chi tiết.
+- Tra cứu đơn hàng: khách đã đăng nhập xem được các đơn của mình; khách vãng lai cần mã đơn **và** email hoặc số điện thoại trùng khớp. Bot không bao giờ được bịa trạng thái đơn.
+- Câu hỏi chung: thanh toán COD/chuyển khoản, phí vận chuyển mặc định 30.000₫, đổi trả, thông tin liên hệ.
+- Chuyển nhân viên: nút "Gặp nhân viên" gửi kèm lịch sử hội thoại vào mục Liên hệ trong trang quản trị.
+
+API key chỉ nằm ở server (`AI_API_KEY`), không gửi xuống trình duyệt. Nếu model chính báo quá tải (429/5xx), client tự thử các model trong `AI_MODEL_FALLBACKS`. Các endpoint JSON `chatbot/message` và `chatbot/escalate` dùng CSRF qua header `X-CSRF-Token`, có giới hạn tần suất và lịch sử tối đa 10 lượt trong session. Nếu chưa có key, key sai hoặc Gemini lỗi, bot tự chuyển sang chế độ dự phòng theo kịch bản mà không làm gián đoạn cửa hàng.
 
 ## Kiểm tra
 

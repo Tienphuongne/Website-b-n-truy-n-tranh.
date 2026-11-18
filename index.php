@@ -15,9 +15,12 @@ spl_autoload_register(function ($class) {
 
     $fileModel              = PATH_MODEL . $fileName;
     $fileController         = PATH_CONTROLLER . $fileName;
+    $fileService            = PATH_SERVICE . $fileName;
 
     if (is_readable($fileModel)) {
         require_once $fileModel;
+    } elseif (is_readable($fileService)) {
+        require_once $fileService;
     } elseif (is_readable($fileController)) {
         require_once $fileController;
     }

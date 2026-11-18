@@ -206,6 +206,52 @@ class OrderModel extends BaseModel
         }
     }
 
+    /**
+     * Tra cứu đơn cho khách vãng lai: cần mã đơn VÀ email hoặc số điện thoại
+     * trùng với thông tin đã đặt. Chỉ trả về các trường cần thiết cho hỗ trợ.
+     */
+    public function findForSupport($orderId, $email = '', $phone = '')
+    {
+        $orderId = (int) $orderId;
+        $email = trim((string) $email);
+        $phone = preg_replace('/\D+/', '', (string) $phone) ?: '';
+        if ($orderId <= 0 || ($email === '' && $phone === '')) {
+            return null;
+        }
+
+        $matches = [];
+        $params = ['id' => $orderId];
+        if ($email !== '') {
+            $matches[] = 'LOWER(o.email) = :email';
+            $params['email'] = mb_strtolower($email);
+        }
+        if ($phone !== '') {
+            $matches[] = "REPLACE(REPLACE(REPLACE(o.phone, ' ', ''), '-', ''), '.', '') = :phone";
+            $params['phone'] = $phone;
+        }
+
+        $order = $this->execute(
+            "SELECT o.id, o.customer_name, o.status, o.created_at, o.total_amount,
+                    o.payment_method, o.shipping_fee, o.discount_amount, o.city,
+                    (SELECT COUNT(*) FROM order_details od WHERE od.order_id = o.id) AS item_count
+             FROM orders o
+             WHERE o.id = :id AND (" . implode(' OR ', $matches) . ")
+             LIMIT 1",
+            $params
+        )->fetch();
+
+        if (!$order) {
+            return null;
+        }
+
+        $items = $this->execute(
+            'SELECT product_name, unit_price, quantity FROM order_details WHERE order_id = :id ORDER BY id',
+            ['id' => $orderId]
+        )->fetchAll();
+
+        return ['order' => $order, 'items' => $items];
+    }
+
     public function getSavedAddresses($userId)
     {
         $rows = $this->execute(

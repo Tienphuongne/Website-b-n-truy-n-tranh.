@@ -5,7 +5,9 @@ $ogImage = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https'
 $ogDescription = 'TruyenThuVi - truyện hay mỗi ngày. Khám phá truyện tranh tuyển chọn, giao hàng toàn quốc.';
 $cssVersion = is_file(PATH_ROOT . 'assets/css/app.css') ? (string) filemtime(PATH_ROOT . 'assets/css/app.css') : '1';
 $uiCssVersion = is_file(PATH_ROOT . 'assets/css/ui-polish.css') ? (string) filemtime(PATH_ROOT . 'assets/css/ui-polish.css') : '1';
+$chatbotCssVersion = is_file(PATH_ROOT . 'assets/css/chatbot.css') ? (string) filemtime(PATH_ROOT . 'assets/css/chatbot.css') : '1';
 $jsVersion = is_file(PATH_ROOT . 'assets/js/app.js') ? (string) filemtime(PATH_ROOT . 'assets/js/app.js') : '1';
+$chatbotJsVersion = is_file(PATH_ROOT . 'assets/js/chatbot.js') ? (string) filemtime(PATH_ROOT . 'assets/js/chatbot.js') : '1';
 $heroJsVersion = is_file(PATH_ROOT . 'assets/js/hero-carousel.js') ? (string) filemtime(PATH_ROOT . 'assets/js/hero-carousel.js') : '1';
 $addressJsVersion = is_file(PATH_ROOT . 'assets/js/vietnam-addresses.js') ? (string) filemtime(PATH_ROOT . 'assets/js/vietnam-addresses.js') : '1';
 ?>
@@ -49,6 +51,7 @@ $addressJsVersion = is_file(PATH_ROOT . 'assets/js/vietnam-addresses.js') ? (str
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= e(PATH_CSS) ?>app.css?v=<?= e($cssVersion) ?>" rel="stylesheet">
     <link href="<?= e(PATH_CSS) ?>ui-polish.css?v=<?= e($uiCssVersion) ?>" rel="stylesheet">
+    <link href="<?= e(PATH_CSS) ?>chatbot.css?v=<?= e($chatbotCssVersion) ?>" rel="stylesheet">
 </head>
 <body>
     <?php require PATH_VIEW . 'components/header.php'; ?>
@@ -67,8 +70,10 @@ $addressJsVersion = is_file(PATH_ROOT . 'assets/js/vietnam-addresses.js') ? (str
         <?php require PATH_VIEW . $view . '.php'; ?>
     </main>
     <?php require PATH_VIEW . 'components/footer.php'; ?>
+    <?php require PATH_VIEW . 'components/chatbot.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= e(PATH_JS) ?>app.js?v=<?= e($jsVersion) ?>"></script>
+    <script src="<?= e(PATH_JS) ?>chatbot.js?v=<?= e($chatbotJsVersion) ?>"></script>
     <script src="<?= e(PATH_JS) ?>hero-carousel.js?v=<?= e($heroJsVersion) ?>"></script>
 </body>
 </html>

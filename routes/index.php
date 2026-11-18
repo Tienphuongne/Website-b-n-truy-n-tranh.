@@ -27,6 +27,8 @@ $routes = [
     'account' => [AccountController::class, 'index'],
     'about' => [PageController::class, 'about'],
     'contact' => [PageController::class, 'contact'],
+    'chatbot/message' => [ChatbotController::class, 'message'],
+    'chatbot/escalate' => [ChatbotController::class, 'escalate'],
     'admin' => [AdminController::class, 'dashboard'],
 ];
 
