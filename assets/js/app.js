@@ -46,4 +46,60 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    document.querySelectorAll('[data-admin-currency-input]').forEach(function (input) {
+        var condition = input.getAttribute('data-admin-currency-when');
+        var unit = input.parentElement.querySelector('[data-admin-currency-unit]');
+
+        function parseCurrency(value) {
+            value = String(value).trim();
+            if (value.indexOf(',') !== -1) return value.replace(/\./g, '').replace(',', '.');
+            if (/^-?\d{1,3}(?:\.\d{3})+$/.test(value)) return value.replace(/\./g, '');
+            return value;
+        }
+
+        function formatCurrency(value) {
+            var parsed = parseCurrency(value);
+            if (parsed === '' || !/^-?\d+(?:\.\d{1,2})?$/.test(parsed)) return value;
+            return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(Number(parsed));
+        }
+
+        function currencyIsActive() {
+            if (!condition) return true;
+            var parts = condition.split('=');
+            var controller = input.form.elements.namedItem(parts[0]);
+            return controller && controller.value === parts[1];
+        }
+
+        function updateInputType() {
+            var active = currencyIsActive();
+            var value = input.value;
+            if (active) {
+                input.type = 'text';
+                input.setAttribute('inputmode', 'decimal');
+                input.value = formatCurrency(value);
+                if (unit) unit.textContent = '₫';
+            } else {
+                input.value = parseCurrency(value);
+                input.type = 'number';
+                input.setAttribute('step', 'any');
+                input.setAttribute('min', '0');
+                input.removeAttribute('inputmode');
+                if (unit) unit.textContent = '%';
+            }
+        }
+
+        input.addEventListener('focus', function () {
+            if (currencyIsActive()) input.value = parseCurrency(input.value);
+        });
+        input.addEventListener('blur', function () {
+            if (currencyIsActive()) input.value = formatCurrency(input.value);
+        });
+
+        if (condition) {
+            var controller = input.form.elements.namedItem(condition.split('=')[0]);
+            if (controller) controller.addEventListener('change', updateInputType);
+        }
+        updateInputType();
+    });
 });

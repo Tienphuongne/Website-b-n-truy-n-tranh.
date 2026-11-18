@@ -20,8 +20,8 @@ class AdminModel extends BaseModel
                 ['name' => 'cover_upload', 'label' => 'Hoặc tải ảnh bìa lên', 'type' => 'file', 'column' => 'cover_image', 'accept' => 'image/jpeg,image/png,image/webp,image/gif'],
                 ['name' => 'existing_images', 'label' => 'Ảnh trong thư viện', 'type' => 'images'],
                 ['name' => 'gallery_upload', 'label' => 'Tải thêm ảnh vào thư viện', 'type' => 'file-multiple', 'accept' => 'image/jpeg,image/png,image/webp,image/gif'],
-                ['name' => 'sale_price', 'label' => 'Giá bán', 'type' => 'number', 'required' => true],
-                ['name' => 'original_price', 'label' => 'Giá gốc', 'type' => 'number'],
+                ['name' => 'sale_price', 'label' => 'Giá bán', 'type' => 'number', 'required' => true, 'currency' => true],
+                ['name' => 'original_price', 'label' => 'Giá gốc', 'type' => 'number', 'currency' => true],
                 ['name' => 'stock_quantity', 'label' => 'Tồn kho', 'type' => 'number', 'required' => true],
                 ['name' => 'sold_quantity', 'label' => 'Đã bán', 'type' => 'number', 'default' => 0],
                 ['name' => 'is_featured', 'label' => 'Sản phẩm nổi bật', 'type' => 'checkbox'],
@@ -84,9 +84,9 @@ class AdminModel extends BaseModel
             'table' => 'coupons', 'create' => true, 'edit' => true, 'delete' => true,
             'fields' => [
                 ['name' => 'code', 'label' => 'Mã giảm giá', 'type' => 'text', 'required' => true],
-                ['name' => 'discount_type', 'label' => 'Kiểu giảm giá', 'type' => 'select', 'options' => ['fixed' => 'Số tiền cố định', 'percent' => 'Phần trăm']],
-                ['name' => 'discount_value', 'label' => 'Giá trị giảm', 'type' => 'number', 'required' => true],
-                ['name' => 'minimum_order', 'label' => 'Giá trị đơn tối thiểu', 'type' => 'number', 'default' => 0],
+                ['name' => 'discount_type', 'label' => 'Kiểu giảm giá', 'type' => 'select', 'options' => ['fixed' => 'Số tiền cố định', 'percent' => 'Phần trăm'], 'default' => 'fixed'],
+                ['name' => 'discount_value', 'label' => 'Giá trị giảm', 'type' => 'number', 'required' => true, 'currency' => true, 'currency_when' => ['field' => 'discount_type', 'value' => 'fixed']],
+                ['name' => 'minimum_order', 'label' => 'Giá trị đơn tối thiểu', 'type' => 'number', 'default' => 0, 'currency' => true],
                 ['name' => 'starts_at', 'label' => 'Bắt đầu', 'type' => 'datetime-local'],
                 ['name' => 'ends_at', 'label' => 'Kết thúc', 'type' => 'datetime-local'],
                 ['name' => 'usage_limit', 'label' => 'Giới hạn lượt dùng', 'type' => 'number'],
@@ -393,6 +393,14 @@ class AdminModel extends BaseModel
             $value = $field['type'] === 'checkbox'
                 ? (!empty($rawValue) ? 1 : 0)
                 : (is_scalar($rawValue) ? trim((string) $rawValue) : '');
+            $isCurrencyValue = !empty($field['currency']);
+            if ($isCurrencyValue && !empty($field['currency_when'])) {
+                $condition = $field['currency_when'];
+                $isCurrencyValue = (string) ($input[$condition['field']] ?? '') === $condition['value'];
+            }
+            if ($isCurrencyValue && $value !== '') {
+                $value = $this->normalizeCurrencyValue($value, $field['label']);
+            }
             if (!empty($field['required']) && $value === '') {
                 throw new DomainException('Vui lòng nhập trường "' . $field['label'] . '".');
             }
@@ -602,6 +610,26 @@ class AdminModel extends BaseModel
             }
             throw $exception;
         }
+    }
+
+    private function normalizeCurrencyValue($value, $label)
+    {
+        $value = str_replace([' ', '₫'], '', $value);
+        $isLocalizedNumber = preg_match('/^-?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/D', $value);
+        $isPlainDecimal = preg_match('/^-?\d+\.\d{1,2}$/D', $value);
+
+        if (!$isLocalizedNumber && !$isPlainDecimal) {
+            throw new DomainException('Trường "' . $label . '" cần là một số tiền hợp lệ.');
+        }
+
+        if (strpos($value, ',') !== false) {
+            return str_replace(',', '.', str_replace('.', '', $value));
+        }
+        if (preg_match('/^-?\d{1,3}(?:\.\d{3})+$/D', $value)) {
+            return str_replace('.', '', $value);
+        }
+
+        return $value;
     }
 
     public function deleteRecord($key, $id)
