@@ -9,7 +9,7 @@ class AdminModel extends BaseModel
             'table' => 'products', 'create' => true, 'edit' => true, 'delete' => true,
             'fields' => [
                 ['name' => 'name', 'label' => 'Tên truyện', 'type' => 'text', 'required' => true],
-                ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'required' => true],
+                ['name' => 'slug', 'label' => 'Đường dẫn thân thiện (slug)', 'type' => 'text', 'required' => true],
                 ['name' => 'category_id', 'label' => 'Danh mục', 'type' => 'foreign', 'table' => 'categories'],
                 ['name' => 'author_id', 'label' => 'Tác giả', 'type' => 'foreign', 'table' => 'authors'],
                 ['name' => 'publisher_id', 'label' => 'Nhà xuất bản', 'type' => 'foreign', 'table' => 'publishers'],
@@ -25,7 +25,7 @@ class AdminModel extends BaseModel
                 ['name' => 'stock_quantity', 'label' => 'Tồn kho', 'type' => 'number', 'required' => true],
                 ['name' => 'sold_quantity', 'label' => 'Đã bán', 'type' => 'number', 'default' => 0],
                 ['name' => 'is_featured', 'label' => 'Sản phẩm nổi bật', 'type' => 'checkbox'],
-                ['name' => 'status', 'label' => 'Trạng thái', 'type' => 'select', 'options' => ['active' => 'Đang bán', 'draft' => 'Bản nháp', 'archived' => 'Lưu trữ']],
+                ['name' => 'status', 'label' => 'Trạng thái', 'type' => 'select', 'options' => ['active' => 'Đang bán', 'draft' => 'Bản nháp', 'archived' => 'Ngừng kinh doanh']],
             ],
         ],
         'categories' => [
@@ -33,7 +33,7 @@ class AdminModel extends BaseModel
             'table' => 'categories', 'create' => true, 'edit' => true, 'delete' => true,
             'fields' => [
                 ['name' => 'name', 'label' => 'Tên danh mục', 'type' => 'text', 'required' => true],
-                ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'required' => true],
+                ['name' => 'slug', 'label' => 'Đường dẫn thân thiện (slug)', 'type' => 'text', 'required' => true],
                 ['name' => 'description', 'label' => 'Mô tả', 'type' => 'textarea'],
                 ['name' => 'is_active', 'label' => 'Đang hoạt động', 'type' => 'checkbox'],
             ],
@@ -43,7 +43,7 @@ class AdminModel extends BaseModel
             'table' => 'genres', 'create' => true, 'edit' => true, 'delete' => true,
             'fields' => [
                 ['name' => 'name', 'label' => 'Tên thể loại', 'type' => 'text', 'required' => true],
-                ['name' => 'slug', 'label' => 'Slug', 'type' => 'text', 'required' => true],
+                ['name' => 'slug', 'label' => 'Đường dẫn thân thiện (slug)', 'type' => 'text', 'required' => true],
             ],
         ],
         'authors' => [

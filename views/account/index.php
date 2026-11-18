@@ -8,12 +8,12 @@
             <a class="<?= $tab === 'password' ? 'active' : '' ?>" href="<?= e(url('account?tab=password')) ?>">Đổi mật khẩu</a>
             <a class="<?= $tab === 'orders' ? 'active' : '' ?>" href="<?= e(url('account?tab=orders')) ?>">Lịch sử đơn hàng</a>
 
-            <div class="account-voucher-card" title="Số voucher còn dùng được, đã trừ voucher bạn đã sử dụng">
+            <div class="account-voucher-card" title="Số mã ưu đãi còn dùng được, đã trừ mã đã sử dụng">
                 <span class="voucher-mini-icon" aria-hidden="true">✦</span>
                 <div>
-                    <span class="account-voucher-label">Voucher của bạn</span>
-                    <strong><?= (int) $voucherSummary['available'] ?> <small>khả dụng</small></strong>
-                    <small class="account-voucher-used">Đã dùng <?= (int) $voucherSummary['used'] ?> voucher</small>
+                    <span class="account-voucher-label">Mã ưu đãi của bạn</span>
+                    <strong><?= (int) $voucherSummary['available'] ?> <small>có thể dùng</small></strong>
+                    <small class="account-voucher-used">Đã dùng <?= (int) $voucherSummary['used'] ?> mã ưu đãi</small>
                 </div>
             </div>
         </nav>

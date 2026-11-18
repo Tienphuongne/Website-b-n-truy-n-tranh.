@@ -1,11 +1,68 @@
+<?php
+$resourceKey = (string) ($_GET['resource'] ?? '');
+$columnLabels = [
+    'id' => 'Mã',
+    'name' => 'Tên',
+    'sale_price' => 'Giá bán',
+    'stock_quantity' => 'Tồn kho',
+    'status' => 'Trạng thái',
+    'is_active' => 'Trạng thái',
+    'customer_name' => 'Khách hàng',
+    'total_amount' => 'Tổng tiền',
+    'created_at' => 'Ngày tạo',
+    'full_name' => 'Họ và tên',
+    'email' => 'Email',
+    'phone' => 'Số điện thoại',
+    'role' => 'Vai trò',
+    'product_id' => 'Mã sản phẩm',
+    'user_id' => 'Mã người dùng',
+    'rating' => 'Điểm đánh giá',
+    'code' => 'Mã giảm giá',
+    'discount_type' => 'Kiểu giảm giá',
+    'discount_value' => 'Giá trị giảm',
+    'starts_at' => 'Ngày bắt đầu',
+    'ends_at' => 'Ngày kết thúc',
+    'message' => 'Nội dung',
+];
+$valueLabels = [
+    'products' => [
+        'status' => ['active' => 'Đang bán', 'draft' => 'Bản nháp', 'archived' => 'Ngừng kinh doanh'],
+    ],
+    'categories' => [
+        'is_active' => ['0' => 'Đã tắt', '1' => 'Đang hoạt động'],
+    ],
+    'orders' => [
+        'status' => [
+            'pending' => 'Chờ xác nhận',
+            'confirmed' => 'Đã xác nhận',
+            'shipping' => 'Đang giao',
+            'completed' => 'Hoàn tất',
+            'cancelled' => 'Đã hủy',
+        ],
+    ],
+    'contacts' => [
+        'status' => ['new' => 'Mới', 'processing' => 'Đang xử lý', 'closed' => 'Đã đóng'],
+    ],
+    'users' => [
+        'role' => ['customer' => 'Khách hàng', 'admin' => 'Quản trị viên'],
+    ],
+    'reviews' => [
+        'status' => ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Từ chối'],
+    ],
+    'coupons' => [
+        'discount_type' => ['fixed' => 'Số tiền cố định', 'percent' => 'Phần trăm'],
+        'is_active' => ['0' => 'Đã tắt', '1' => 'Đang hoạt động'],
+    ],
+];
+?>
 <section class="admin-panel">
     <div class="admin-panel-heading"><div><h2><?= e($resource['title'] ?? 'Danh sách') ?></h2><p>Danh sách dữ liệu hiện có trong cửa hàng.</p></div>
         <?php if (!empty($definition['create'])): ?><a class="btn btn-primary btn-sm" href="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/create')) ?>">+ Thêm mới</a><?php endif; ?>
     </div>
     <div class="admin-list-search"><input type="search" class="form-control" placeholder="Tìm trong danh sách..." data-admin-search><span><?= count($resource['rows'] ?? []) ?> bản ghi</span></div>
     <?php if (!empty($resource['rows'])): ?>
-        <div class="table-responsive"><table class="table align-middle"><thead><tr><?php foreach (array_keys($resource['rows'][0]) as $column): ?><th><?= e(ucwords(str_replace('_', ' ', $column))) ?></th><?php endforeach; ?><th>Thao tác</th></tr></thead><tbody>
-            <?php foreach ($resource['rows'] as $row): ?><tr><?php foreach ($row as $value): ?><td><?= e($value === null ? '—' : $value) ?></td><?php endforeach; ?><td class="admin-row-actions">
+        <div class="table-responsive"><table class="table align-middle"><thead><tr><?php foreach (array_keys($resource['rows'][0]) as $column): ?><th><?= e($columnLabels[$column] ?? $column) ?></th><?php endforeach; ?><th>Thao tác</th></tr></thead><tbody>
+            <?php foreach ($resource['rows'] as $row): ?><tr><?php foreach ($row as $column => $value): ?><td><?= e($value === null ? '—' : ($valueLabels[$resourceKey][$column][(string) $value] ?? $value)) ?></td><?php endforeach; ?><td class="admin-row-actions">
                 <?php if (!empty($definition['detail'])): ?><a class="btn btn-sm btn-outline-primary" href="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/detail?id=' . (int) $row['id'])) ?>">Xem</a><?php endif; ?>
                 <?php if (!empty($definition['edit'])): ?><a class="btn btn-sm btn-outline-secondary" href="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/edit?id=' . (int) $row['id'])) ?>">Sửa</a><?php endif; ?>
                 <?php if (!empty($definition['delete'])): ?><form method="post" action="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/delete')) ?>" data-confirm="Bạn có chắc muốn xóa bản ghi này?"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $row['id'] ?>"><button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button></form><?php endif; ?>
