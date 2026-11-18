@@ -48,7 +48,11 @@
                     <?= csrf_field() ?>
                     <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
                     <label class="visually-hidden" for="quantity">Số lượng</label>
-                    <input class="form-control quantity-input" id="quantity" type="number" name="quantity" value="1" min="1" max="<?= max(1, (int) $product['stock_quantity']) ?>" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>
+                    <div class="quantity-control">
+                        <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Giảm số lượng" aria-controls="quantity" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>−</button>
+                        <input class="form-control quantity-input" id="quantity" type="number" name="quantity" value="1" min="1" max="<?= max(1, (int) $product['stock_quantity']) ?>" step="1" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>
+                        <button class="quantity-step" type="button" data-quantity-step="1" aria-label="Tăng số lượng" aria-controls="quantity" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>+</button>
+                    </div>
                     <button class="btn btn-primary" type="submit" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>Thêm vào giỏ hàng</button>
                     <button class="btn btn-outline-primary" type="submit" name="buy_now" value="1" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>Mua ngay</button>
                 </form>

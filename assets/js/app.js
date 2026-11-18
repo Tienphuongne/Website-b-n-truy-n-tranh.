@@ -28,7 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.querySelectorAll('[data-quantity-step]').forEach(function (button) {
         button.addEventListener('click', function () {
-            var input = button.form && button.form.querySelector('[data-cart-quantity]');
+            var inputId = button.getAttribute('aria-controls');
+            var input = inputId
+                ? document.getElementById(inputId)
+                : button.form && button.form.querySelector('[data-cart-quantity]');
             if (!input) return;
 
             var min = Number(input.min) || 1;
@@ -41,7 +44,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (next === current) return;
 
             input.value = String(next);
-            input.dispatchEvent(new Event('change', { bubbles: true }));
+            if (input.hasAttribute('data-cart-quantity')) {
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         });
     });
 
