@@ -80,7 +80,14 @@ class AdminModel extends BaseModel
             'fields' => [['name' => 'status', 'label' => 'Trạng thái đánh giá', 'type' => 'select', 'options' => ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Từ chối']]],
         ],
         'coupons' => [
-            'title' => 'Mã giảm giá', 'query' => 'SELECT id, code, discount_type, discount_value, starts_at, ends_at, is_active FROM coupons ORDER BY created_at DESC LIMIT 100',
+            'title' => 'Mã giảm giá',
+            'query' => "SELECT id, code, discount_type, discount_value, starts_at, ends_at,
+                               usage_limit, used_count,
+                               CASE WHEN usage_limit IS NULL THEN NULL
+                                    ELSE GREATEST(usage_limit - used_count, 0) END AS available_count,
+                               CASE WHEN ends_at IS NOT NULL AND ends_at < NOW() THEN 0 ELSE is_active END AS is_active
+                        FROM coupons
+                        ORDER BY created_at DESC LIMIT 100",
             'table' => 'coupons', 'create' => true, 'edit' => true, 'delete' => true,
             'fields' => [
                 ['name' => 'code', 'label' => 'Mã giảm giá', 'type' => 'text', 'required' => true],
@@ -161,10 +168,24 @@ class AdminModel extends BaseModel
         }, array_keys(self::$resources), self::$resources);
     }
 
+    public function syncExpiredCoupons()
+    {
+        $this->execute(
+            'UPDATE coupons
+             SET is_active = 0
+             WHERE ends_at IS NOT NULL
+               AND ends_at < NOW()
+               AND is_active <> 0'
+        );
+    }
+
     public function getResource($key)
     {
         if (!isset(self::$resources[$key])) {
             return null;
+        }
+        if ($key === 'coupons') {
+            $this->syncExpiredCoupons();
         }
 
         return [
@@ -183,6 +204,16 @@ class AdminModel extends BaseModel
         $definition = $this->getDefinition($key);
         if (!$definition || empty($definition['edit'])) {
             return null;
+        }
+        if ($key === 'coupons') {
+            $this->syncExpiredCoupons();
+            $coupon = $this->execute(
+                'SELECT ends_at FROM coupons WHERE id = :id LIMIT 1',
+                ['id' => (int) $id]
+            )->fetch();
+            if ($coupon && $coupon['ends_at'] && strtotime((string) $coupon['ends_at']) < time()) {
+                throw new DomainException('Voucher đã hết thời gian sử dụng nên không thể chỉnh sửa.');
+            }
         }
 
         $record = $this->execute(
@@ -369,6 +400,16 @@ class AdminModel extends BaseModel
         $definition = $this->getDefinition($key);
         if (!$definition || ($id ? empty($definition['edit']) : empty($definition['create']))) {
             throw new DomainException('Thao tác này không được hỗ trợ.');
+        }
+        if ($key === 'coupons' && $id) {
+            $this->syncExpiredCoupons();
+            $coupon = $this->execute(
+                'SELECT ends_at FROM coupons WHERE id = :id LIMIT 1',
+                ['id' => (int) $id]
+            )->fetch();
+            if ($coupon && $coupon['ends_at'] && strtotime((string) $coupon['ends_at']) < time()) {
+                throw new DomainException('Voucher đã hết thời gian sử dụng nên không thể chỉnh sửa.');
+            }
         }
 
         $values = [];
@@ -637,6 +678,16 @@ class AdminModel extends BaseModel
         $definition = $this->getDefinition($key);
         if (!$definition || empty($definition['delete']) || (int) $id < 1) {
             throw new DomainException('Không thể xóa mục dữ liệu này.');
+        }
+        if ($key === 'coupons') {
+            $this->syncExpiredCoupons();
+            $coupon = $this->execute(
+                'SELECT ends_at FROM coupons WHERE id = :id LIMIT 1',
+                ['id' => (int) $id]
+            )->fetch();
+            if ($coupon && $coupon['ends_at'] && strtotime((string) $coupon['ends_at']) < time()) {
+                throw new DomainException('Voucher đã hết thời gian sử dụng nên không thể xóa.');
+            }
         }
 
         $uploadedFiles = [];
