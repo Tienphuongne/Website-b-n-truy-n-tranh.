@@ -9,7 +9,7 @@
     <?php elseif (!empty($items)): ?>
         <?php $subtotal = 0; foreach ($items as $item) { $subtotal += (float) $item['sale_price'] * (int) $item['quantity']; } ?>
         <div class="page-heading"><div><span class="eyebrow">SẮP HOÀN TẤT</span><h1>Thanh toán</h1></div></div>
-        <form action="<?= e(url('checkout')) ?>" method="post" class="checkout-layout">
+        <form action="<?= e(url('checkout')) ?>" method="post" class="checkout-layout" data-checkout-form>
             <?= csrf_field() ?>
             <section class="checkout-card">
                 <h2>Thông tin nhận hàng</h2>
@@ -131,8 +131,9 @@
                             <span class="voucher-count voucher-count-muted">Đăng nhập để xem voucher</span>
                         <?php endif; ?>
                     </div>
-                    <div class="coupon-input-row"><input class="form-control" id="coupon" name="coupon" placeholder="Nhập mã giảm giá" value="<?= e($_SESSION['coupon'] ?? '') ?>"><button class="btn btn-outline-primary" type="submit" name="apply_coupon" value="1" formnovalidate>Áp dụng</button></div>
-                    <?php if ($coupon): ?><small class="coupon-applied">Đã áp dụng <?= e($coupon['code']) ?></small><?php endif; ?>
+                    <div class="coupon-input-row"><input class="form-control" id="coupon" name="coupon" placeholder="Nhập mã giảm giá" aria-describedby="coupon-error" value="<?= e($_SESSION['coupon'] ?? '') ?>"><button class="btn btn-outline-primary" type="submit" name="apply_coupon" value="1" formnovalidate data-apply-coupon>Áp dụng</button></div>
+                    <small class="coupon-error" id="coupon-error" data-coupon-error role="alert" hidden></small>
+                    <small class="coupon-applied" data-coupon-applied <?= $coupon ? '' : 'hidden' ?>><?= $coupon ? 'Đã áp dụng ' . e($coupon['code']) : '' ?></small>
                     <?php if ($userId > 0): ?>
                         <small class="voucher-meta">Đang có <?= (int) $voucherSummary['total'] ?> voucher hoạt động · Bạn đã dùng <?= (int) $voucherSummary['used'] ?></small>
                         <?php if (!empty($voucherSummary['codes'])): ?>
@@ -155,8 +156,8 @@
                 </div>
                 <div class="summary-row"><span>Tạm tính</span><strong><?= number_format($subtotal, 0, ',', '.') ?>₫</strong></div>
                 <div class="summary-row"><span>Phí vận chuyển</span><strong>30.000₫</strong></div>
-                <?php if ($discount > 0): ?><div class="summary-row"><span>Giảm giá</span><strong>-<?= number_format($discount, 0, ',', '.') ?>₫</strong></div><?php endif; ?>
-                <div class="summary-row summary-total"><span>Tổng thanh toán</span><strong><?= number_format($subtotal + 30000 - $discount, 0, ',', '.') ?>₫</strong></div>
+                <div class="summary-row" data-checkout-discount-row <?= $discount > 0 ? '' : 'hidden' ?>><span>Giảm giá</span><strong data-checkout-discount>-<?= number_format($discount, 0, ',', '.') ?>₫</strong></div>
+                <div class="summary-row summary-total"><span>Tổng thanh toán</span><strong data-checkout-total><?= number_format($subtotal + 30000 - $discount, 0, ',', '.') ?>₫</strong></div>
                 <button class="btn btn-primary w-100" type="submit">Xác nhận đặt hàng</button>
                 <p class="secure-note">Bằng việc đặt hàng, bạn đồng ý với chính sách mua hàng.</p>
             </aside>
@@ -442,6 +443,112 @@
                 updateAddressHint();
 
                 var couponInput = document.getElementById('coupon');
+                var couponError = document.querySelector('[data-coupon-error]');
+                var couponApplied = document.querySelector('[data-coupon-applied]');
+                var discountRow = document.querySelector('[data-checkout-discount-row]');
+                var discountAmount = document.querySelector('[data-checkout-discount]');
+                var checkoutTotal = document.querySelector('[data-checkout-total]');
+
+                function formatMoney(amount) {
+                    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(Number(amount) || 0) + '₫';
+                }
+
+                function updateCouponSummary(result) {
+                    if (result.discount === undefined || result.total === undefined) {
+                        return;
+                    }
+                    var discountValue = Number(result.discount) || 0;
+                    if (discountRow) {
+                        discountRow.hidden = discountValue <= 0;
+                    }
+                    if (discountAmount) {
+                        discountAmount.textContent = '-' + formatMoney(discountValue);
+                    }
+                    if (checkoutTotal) {
+                        checkoutTotal.textContent = formatMoney(result.total);
+                    }
+                }
+
+                if (couponInput && couponError) {
+                    couponInput.addEventListener('input', function () {
+                        couponError.hidden = true;
+                        couponError.textContent = '';
+                    });
+                }
+
+                if (form) {
+                    form.addEventListener('submit', async function (event) {
+                        var submitter = event.submitter || document.activeElement;
+                        if (!submitter || submitter.name !== 'apply_coupon') {
+                            return;
+                        }
+                        event.preventDefault();
+                        if (submitter.disabled) {
+                            return;
+                        }
+
+                        var originalText = submitter.textContent;
+                        submitter.disabled = true;
+                        submitter.textContent = 'Đang kiểm tra...';
+                        if (couponError) {
+                            couponError.hidden = true;
+                            couponError.textContent = '';
+                        }
+
+                        try {
+                            var payload = new FormData(form);
+                            payload.set('apply_coupon', '1');
+                            var response = await fetch(form.action, {
+                                method: 'POST',
+                                body: payload,
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+                            var result = null;
+                            try {
+                                result = await response.json();
+                            } catch (parseError) {
+                                result = null;
+                            }
+                            if (!result) {
+                                throw new Error('Chưa thể kiểm tra mã giảm giá. Vui lòng thử lại.');
+                            }
+
+                            updateCouponSummary(result);
+                            if (!response.ok || !result.success) {
+                                if (couponApplied && result.discount !== undefined) {
+                                    couponApplied.hidden = true;
+                                    couponApplied.textContent = '';
+                                }
+                                if (couponError) {
+                                    couponError.textContent = result.message || 'Mã giảm giá không hợp lệ.';
+                                    couponError.hidden = false;
+                                }
+                                return;
+                            }
+
+                            if (couponInput && result.coupon_code) {
+                                couponInput.value = result.coupon_code;
+                            }
+                            if (couponApplied) {
+                                couponApplied.textContent = 'Đã áp dụng ' + result.coupon_code;
+                                couponApplied.hidden = false;
+                            }
+                        } catch (error) {
+                            if (couponError) {
+                                couponError.textContent = error.message || 'Chưa thể kiểm tra mã giảm giá. Vui lòng thử lại.';
+                                couponError.hidden = false;
+                            }
+                        } finally {
+                            submitter.disabled = false;
+                            submitter.textContent = originalText;
+                        }
+                    });
+                }
+
                 document.querySelectorAll('[data-voucher-code]').forEach(function (chip) {
                     chip.addEventListener('click', function () {
                         if (!couponInput) {
