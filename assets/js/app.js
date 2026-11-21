@@ -15,6 +15,83 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    function showCartNotification(message, isError) {
+        var notification = document.querySelector('[data-cart-notification]');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.className = 'cart-notification';
+            notification.setAttribute('role', isError ? 'alert' : 'status');
+            notification.setAttribute('aria-live', isError ? 'assertive' : 'polite');
+            notification.dataset.cartNotification = '1';
+            document.body.appendChild(notification);
+            window.requestAnimationFrame(function () {
+                notification.classList.add('is-visible');
+            });
+        }
+
+        window.clearTimeout(notification.hideTimer);
+        window.clearTimeout(notification.removeTimer);
+        notification.textContent = message;
+        notification.classList.toggle('is-error', Boolean(isError));
+        notification.classList.remove('is-hiding');
+        notification.hideTimer = window.setTimeout(function () {
+            notification.classList.add('is-hiding');
+            notification.removeTimer = window.setTimeout(function () {
+                notification.remove();
+            }, 300);
+        }, 2700);
+    }
+
+    document.querySelectorAll('form[data-cart-add-form]').forEach(function (form) {
+        form.addEventListener('submit', async function (event) {
+            var submitter = event.submitter;
+            if (submitter && submitter.name === 'buy_now') return;
+
+            event.preventDefault();
+            if (form.dataset.submitting === '1') return;
+
+            var button = submitter || form.querySelector('button[type="submit"]');
+            var originalText = button ? button.textContent : '';
+            form.dataset.submitting = '1';
+            if (button) button.disabled = true;
+
+            try {
+                var response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                var result = null;
+                try {
+                    result = await response.json();
+                } catch (parseError) {
+                    result = null;
+                }
+
+                if (!response.ok || !result || !result.success) {
+                    throw new Error(result && result.message ? result.message : 'Không thể thêm sản phẩm vào giỏ. Vui lòng thử lại.');
+                }
+
+                document.querySelectorAll('.cart-count').forEach(function (count) {
+                    count.textContent = String(result.cart_count);
+                });
+                showCartNotification(result.message, false);
+            } catch (error) {
+                showCartNotification(error.message || 'Không thể thêm sản phẩm vào giỏ. Vui lòng thử lại.', true);
+            } finally {
+                delete form.dataset.submitting;
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            }
+        });
+    });
+
     document.querySelectorAll('[data-cart-quantity]').forEach(function (input) {
         input.addEventListener('change', function () {
             if (!input.form) return;

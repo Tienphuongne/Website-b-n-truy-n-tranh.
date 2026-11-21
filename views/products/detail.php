@@ -44,7 +44,7 @@
                     <div><span>Thể loại</span><strong class="genre-links"><?php if ($genres): ?><?php foreach ($genres as $genre): ?><a href="<?= e(url('products?genre=' . (int) $genre['id'])) ?>"><?= e($genre['name']) ?></a><?php endforeach; ?><?php else: ?>Đang cập nhật<?php endif; ?></strong></div>
                     <div><span>Mã truyện</span><strong>#<?= (int) $product['id'] ?></strong></div>
                 </div>
-                <form action="<?= e(url('cart/add')) ?>" method="post" class="detail-actions">
+                <form action="<?= e(url('cart/add')) ?>" method="post" class="detail-actions" data-cart-add-form>
                     <?= csrf_field() ?>
                     <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
                     <input type="hidden" name="return_url" value="<?= e($_SERVER['REQUEST_URI'] ?? ('/product/detail/' . (int) $product['id'])) ?>">

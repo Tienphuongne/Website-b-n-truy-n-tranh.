@@ -45,6 +45,10 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .account-link, .cart-link { align-items: center; display: inline-flex; font-size: 11px; font-weight: 600; gap: 7px; white-space: nowrap; }
 .header-icon { color: var(--accent); font-size: 21px; }
 .cart-count { align-items: center; background: var(--accent); border-radius: 50%; color: #fff; display: inline-flex; font-size: 10px; height: 19px; justify-content: center; min-width: 19px; padding: 0 5px; }
+.cart-notification { background: #fff; border: 1px solid #d5ebdf; border-left: 4px solid #278653; border-radius: 10px; box-shadow: var(--shadow); color: #245c3e; max-width: min(390px, calc(100vw - 32px)); opacity: 0; padding: 14px 18px; pointer-events: none; position: fixed; right: 20px; top: 20px; transform: translateX(24px); transition: opacity .25s ease, transform .25s ease; z-index: 1090; }
+.cart-notification.is-visible { opacity: 1; transform: translateX(0); }
+.cart-notification.is-hiding { opacity: 0; transform: translateX(24px); }
+.cart-notification.is-error { border-color: #f0c7c7; border-left-color: #c53737; color: #8d2929; }
 .site-nav { border-top: 1px solid #f4f2f0; min-height: 48px; padding: 0; }
 .site-nav .nav-link { color: #45464a; font-size: 12px; font-weight: 600; padding: 14px 18px 14px 0; }
 .site-nav .nav-link:hover { color: var(--accent); }
