@@ -6,7 +6,7 @@
         <nav class="account-nav" aria-label="Tài khoản">
             <a class="<?= $tab === 'profile' ? 'active' : '' ?>" href="<?= e(url('account')) ?>">Thông tin cá nhân</a>
             <a class="<?= $tab === 'password' ? 'active' : '' ?>" href="<?= e(url('account?tab=password')) ?>">Đổi mật khẩu</a>
-            <a class="<?= $tab === 'orders' ? 'active' : '' ?>" href="<?= e(url('account?tab=orders')) ?>">Lịch sử đơn hàng</a>
+            <a class="<?= $tab === 'orders' ? 'active' : '' ?>" href="<?= e(url('account?tab=orders')) ?>">Đơn hàng</a>
             <a class="<?= $tab === 'wishlist' ? 'active' : '' ?>" href="<?= e(url('account?tab=wishlist')) ?>">Yêu thích (<?= count($wishlistProducts) ?>)</a>
             <a class="<?= $tab === 'addresses' ? 'active' : '' ?>" href="<?= e(url('account?tab=addresses')) ?>">Sổ địa chỉ</a>
 
@@ -34,9 +34,9 @@
                 <?php
                 $statusLabels = [
                     'pending' => 'Chờ xác nhận',
-                    'confirmed' => 'Đã xác nhận',
-                    'shipping' => 'Đang giao',
-                    'completed' => 'Hoàn tất',
+                    'confirmed' => 'Chờ lấy hàng',
+                    'shipping' => 'Chờ giao hàng',
+                    'completed' => 'Đánh giá',
                     'cancelled' => 'Đã hủy',
                 ];
                 $paymentLabels = [
@@ -51,8 +51,26 @@
                 };
                 ?>
                 <div class="account-section-head">
-                    <div><h2>Lịch sử đơn hàng</h2><p>Đơn đặt bằng tài khoản hoặc bằng cùng email đều hiển thị tại đây.</p></div>
+                    <div><h2>Đơn hàng của tôi</h2><p>Theo dõi trạng thái và đánh giá các sản phẩm đã mua.</p></div>
                     <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('account?tab=orders')) ?>">Làm mới</a>
+                </div>
+                <div class="order-status-tabs" aria-label="Lọc trạng thái đơn hàng">
+                    <?php
+                    $statusTabs = [
+                        'pending' => 'Chờ xác nhận',
+                        'pickup' => 'Chờ lấy hàng',
+                        'shipping' => 'Đang giao',
+                        'review' => 'Đánh giá',
+                        'cancelled' => 'Đã hủy',
+                    ];
+                    ?>
+                    <?php foreach ($statusTabs as $statusKey => $statusName): ?>
+                        <a class="<?= $orderStatusFilter === $statusKey ? 'active' : '' ?>"
+                           href="<?= e(url('account?tab=orders&status=' . $statusKey)) ?>">
+                            <?= e($statusName) ?>
+                            <span><?= (int) ($orderStatusCounts[$statusKey] ?? 0) ?></span>
+                        </a>
+                    <?php endforeach; ?>
                 </div>
                 <?php if ($databaseError): ?>
                     <p class="text-muted"><?= e($databaseError) ?></p>
@@ -74,7 +92,7 @@
                                     <td><?= e($formatOrderDate($order['created_at'])) ?></td>
                                     <td><strong><?= number_format((float) $order['total_amount'], 0, ',', '.') ?>₫</strong></td>
                                     <td><span class="order-status-badge status-<?= e($orderStatus) ?>"><?= e($statusLabels[$orderStatus] ?? $orderStatus) ?></span></td>
-                                    <td><a href="<?= e(url('account?tab=orders&order=' . (int) $order['id'])) ?>"><?= $isSelected ? 'Đang xem' : 'Chi tiết' ?> <span aria-hidden="true">→</span></a></td>
+                                    <td><a href="<?= e(url('account?tab=orders&status=' . rawurlencode($orderStatusFilter) . '&order=' . (int) $order['id'])) ?>"><?= $isSelected ? 'Đang xem' : 'Chi tiết' ?> <span aria-hidden="true">→</span></a></td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>
@@ -102,7 +120,17 @@
                         <div class="order-detail-box account-order-detail">
                             <div class="order-detail-head">
                                 <div><h3>Chi tiết đơn #<?= (int) $selectedOrder['id'] ?></h3><p>Đặt lúc <?= e($formatOrderDate($selectedOrder['created_at'])) ?></p></div>
-                                <span class="order-status-badge status-<?= e($detailStatus) ?>"><?= e($statusLabels[$detailStatus] ?? $detailStatus) ?></span>
+                                <div class="order-detail-actions">
+                                    <span class="order-status-badge status-<?= e($detailStatus) ?>"><?= e($statusLabels[$detailStatus] ?? $detailStatus) ?></span>
+                                    <?php if (in_array($detailStatus, ['pending', 'confirmed'], true)): ?>
+                                        <form method="post" action="<?= e(url('account?tab=orders&status=' . $orderStatusFilter)) ?>" data-confirm="Bạn có chắc muốn hủy đơn hàng #<?= (int) $selectedOrder['id'] ?>?">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="form_type" value="cancel_order">
+                                            <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Hủy đơn hàng</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
                             </div>
 
                             <div class="account-order-meta">
@@ -132,12 +160,97 @@
                                 <div class="account-alert">Đơn hàng này chưa có thông tin sản phẩm.</div>
                             <?php endif; ?>
 
+                            <?php if ($orderStatusFilter === 'review' && $detailStatus === 'completed'): ?>
+                                <div class="account-review-box">
+                                    <h3>Đánh giá của bạn</h3>
+                                    <?php foreach ($orderDetails as $detail): ?>
+                                        <?php
+                                        $reviewRecord = (int) ($detail['product_id'] ?? 0) > 0
+                                            ? (new ReviewModel())->getForUserProduct((int) $_SESSION['user']['id'], (int) $detail['product_id'])
+                                            : null;
+                                        ?>
+                                        <div class="account-review-item">
+                                            <strong><?= e($detail['product_name']) ?></strong>
+                                            <?php if ($reviewRecord): ?>
+                                                <div class="review-stars" aria-label="<?= (int) $reviewRecord['rating'] ?> sao"><?= str_repeat('★', (int) $reviewRecord['rating']) ?><?= str_repeat('☆', 5 - (int) $reviewRecord['rating']) ?></div>
+                                                <p><?= e($reviewRecord['content'] ?: 'Bạn đã đánh giá sản phẩm này.') ?></p>
+                                                <small><?= $reviewRecord['status'] === 'approved' ? 'Đã duyệt' : ($reviewRecord['status'] === 'rejected' ? 'Bị từ chối' : 'Đang chờ duyệt') ?></small>
+                                            <?php else: ?>
+                                                <form method="post" action="<?= e(url('account?tab=orders&status=review')) ?>" class="account-review-form">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="form_type" value="review">
+                                                    <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                                    <input type="hidden" name="product_id" value="<?= (int) $detail['product_id'] ?>">
+                                                    <label class="form-label" for="rating-<?= (int) $detail['product_id'] ?>">Số sao</label>
+                                                    <select class="form-select mb-2" id="rating-<?= (int) $detail['product_id'] ?>" name="rating" required>
+                                                        <option value="">Chọn đánh giá</option>
+                                                        <?php for ($star = 5; $star >= 1; $star--): ?>
+                                                            <option value="<?= $star ?>"><?= $star ?> sao</option>
+                                                        <?php endfor; ?>
+                                                    </select>
+                                                    <label class="form-label" for="review-<?= (int) $detail['product_id'] ?>">Nội dung</label>
+                                                    <textarea class="form-control" id="review-<?= (int) $detail['product_id'] ?>" name="content" rows="3" maxlength="3000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea>
+                                                    <button class="btn btn-primary btn-sm mt-2" type="submit">Gửi đánh giá</button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+
                             <div class="account-order-totals">
                                 <div><span>Tạm tính</span><strong><?= number_format($detailSubtotal, 0, ',', '.') ?>₫</strong></div>
                                 <div><span>Giảm giá<?= !empty($selectedOrder['coupon_code']) ? ' (' . e($selectedOrder['coupon_code']) . ')' : '' ?></span><strong>-<?= number_format((float) $selectedOrder['discount_amount'], 0, ',', '.') ?>₫</strong></div>
                                 <div><span>Phí vận chuyển</span><strong><?= number_format((float) $selectedOrder['shipping_fee'], 0, ',', '.') ?>₫</strong></div>
                                 <div class="is-total"><span>Tổng thanh toán</span><strong><?= number_format((float) $selectedOrder['total_amount'], 0, ',', '.') ?>₫</strong></div>
                             </div>
+                            <?php if ($returnRequest): ?>
+                                <?php
+                                $returnStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã duyệt hoàn tiền', 'rejected' => 'Không được phê duyệt'];
+                                $returnReasons = OrderModel::returnReasons();
+                                ?>
+                                <div class="account-alert">
+                                    <strong>Yêu cầu trả hàng: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
+                                    <p class="mb-1">Lý do: <?= e($returnReasons[$returnRequest['reason']] ?? $returnRequest['reason']) ?></p>
+                                    <p><?= nl2br(e($returnRequest['description'])) ?></p>
+                                    <?php foreach ($returnRequest['media'] as $media): ?>
+                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
+                                        <?php if ($media['media_type'] === 'image'): ?>
+                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener">Xem ảnh minh chứng</a>
+                                        <?php else: ?>
+                                            <video class="return-evidence-video" controls preload="metadata">
+                                                <source src="<?= e($mediaUrl) ?>">
+                                                Trình duyệt không hỗ trợ phát video.
+                                            </video>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($detailStatus === 'completed' && (!$returnRequest || $returnRequest['status'] === 'rejected')): ?>
+                                <div class="return-request-box">
+                                    <h3>Yêu cầu trả hàng và hoàn tiền</h3>
+                                    <p>Chỉ áp dụng cho đơn đã giao thành công. Gửi đủ 4 ảnh và 1 video để quản trị viên xem xét.</p>
+                                    <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&order=' . (int) $selectedOrder['id'])) ?>">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="form_type" value="return_request">
+                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                        <label class="form-label" for="return-reason">Lý do trả hàng</label>
+                                        <select class="form-select mb-3" id="return-reason" name="reason" required>
+                                            <option value="">Chọn lý do</option>
+                                            <?php foreach (OrderModel::returnReasons() as $reason => $label): ?>
+                                                <option value="<?= e($reason) ?>"><?= e($label) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <label class="form-label" for="return-description">Chi tiết lý do</label>
+                                        <textarea class="form-control mb-3" id="return-description" name="description" rows="4" maxlength="3000" required></textarea>
+                                        <label class="form-label" for="return-images">4 hình ảnh hàng hóa/đơn hàng (JPG, PNG, WEBP, GIF; tối đa 5MB mỗi ảnh)</label>
+                                        <input class="form-control mb-3" id="return-images" name="evidence_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
+                                        <label class="form-label" for="return-video">1 video minh chứng (MP4, WEBM, MOV; tối đa 50MB)</label>
+                                        <input class="form-control mb-3" id="return-video" name="evidence_video" type="file" accept="video/mp4,video/webm,video/quicktime" required>
+                                        <button class="btn btn-primary" type="submit">Gửi yêu cầu phê duyệt</button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
                             <a class="text-link" href="<?= e(url('account?tab=orders')) ?>">← Ẩn chi tiết</a>
                         </div>
                     <?php endif; ?>
@@ -248,14 +361,153 @@
                 </form>
             <?php else: ?>
                 <h2>Thông tin cá nhân</h2>
+                <?php
+                $birthDay = 0;
+                $birthMonth = 0;
+                $birthYear = 0;
+                if (!empty($profile['birth_date']) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', (string) $profile['birth_date'], $birthParts)) {
+                    $birthYear = (int) $birthParts[1];
+                    $birthMonth = (int) $birthParts[2];
+                    $birthDay = (int) $birthParts[3];
+                }
+                ?>
                 <form method="post" action="<?= e(url('account')) ?>" class="account-form">
                     <?= csrf_field() ?><input type="hidden" name="form_type" value="profile">
-                    <label class="form-label" for="account-name">Họ và tên</label><input class="form-control mb-3" id="account-name" name="full_name" required value="<?= e($_SESSION['user']['name']) ?>">
-                    <label class="form-label" for="account-email">Email</label><input class="form-control mb-3" id="account-email" value="<?= e($_SESSION['user']['email']) ?>" disabled>
-                    <label class="form-label" for="account-phone">Số điện thoại</label><input class="form-control mb-3" id="account-phone" name="phone" value="<?= e($_SESSION['user']['phone'] ?? '') ?>">
-                    <button class="btn btn-primary" type="submit">Lưu thay đổi</button>
+                    <fieldset data-profile-fields disabled>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="account-name">Họ và tên</label>
+                            <input class="form-control" id="account-name" name="full_name" required value="<?= e($profile['full_name']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ngày sinh</label>
+                            <div class="birth-date-fields">
+                                <select class="form-select" id="account-birth-day" name="birth_day" aria-label="Ngày sinh">
+                                    <option value="0">Ngày</option>
+                                    <?php for ($day = 1; $day <= 31; $day++): ?>
+                                        <option value="<?= $day ?>" <?= $birthDay === $day ? 'selected' : '' ?>><?= $day ?></option>
+                                    <?php endfor; ?>
+                                </select>
+                                <select class="form-select" id="account-birth-month" name="birth_month" aria-label="Tháng sinh">
+                                    <option value="0">Tháng</option>
+                                    <?php for ($month = 1; $month <= 12; $month++): ?>
+                                        <option value="<?= $month ?>" <?= $birthMonth === $month ? 'selected' : '' ?>><?= $month ?></option>
+                                    <?php endfor; ?>
+                                </select>
+                                <select class="form-select" id="account-birth-year" name="birth_year" aria-label="Năm sinh">
+                                    <option value="0">Năm</option>
+                                    <?php for ($year = (int) date('Y'); $year >= 1900; $year--): ?>
+                                        <option value="<?= $year ?>" <?= $birthYear === $year ? 'selected' : '' ?>><?= $year ?></option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="account-email">Email</label>
+                            <input class="form-control" id="account-email" name="email" type="email" required value="<?= e($profile['email']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="account-phone">Số điện thoại</label>
+                            <input class="form-control" id="account-phone" name="phone" type="tel" value="<?= e($profile['phone']) ?>">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="account-city">Tỉnh / Thành phố</label>
+                            <select class="form-select" id="account-city" name="city">
+                                <option value="">-- Chọn tỉnh / thành phố --</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="account-district">Quận / Huyện</label>
+                            <select class="form-select" id="account-district" name="district">
+                                <option value="">-- Chọn quận / huyện --</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="account-address">Địa chỉ nhận hàng</label>
+                            <input class="form-control" id="account-address" name="address" value="<?= e($profile['address']) ?>" autocomplete="street-address">
+                        </div>
+                    </div>
+                    </fieldset>
+                    <div class="profile-form-actions">
+                        <button class="btn btn-outline-primary" type="button" data-edit-profile>Thay đổi thông tin cá nhân</button>
+                        <button class="btn btn-primary" type="submit" data-save-profile hidden>Lưu thay đổi</button>
+                    </div>
                 </form>
             <?php endif; ?>
         </div>
     </div>
 </section>
+<script src="<?= e(PATH_JS) ?>vietnam-addresses.js?v=<?= e($addressJsVersion ?? '1') ?>"></script>
+<script>
+(function () {
+    var profileForm = document.querySelector('.account-form form') || document.querySelector('.account-form');
+    var editProfileButton = document.querySelector('[data-edit-profile]');
+    var saveProfileButton = document.querySelector('[data-save-profile]');
+    var profileFields = document.querySelector('[data-profile-fields]');
+    if (editProfileButton && saveProfileButton && profileFields) {
+        editProfileButton.addEventListener('click', function () {
+            profileFields.disabled = false;
+            editProfileButton.hidden = true;
+            saveProfileButton.hidden = false;
+            var firstInput = profileFields.querySelector('input:not([disabled]), select:not([disabled])');
+            if (firstInput) firstInput.focus();
+        });
+    }
+
+    var citySelect = document.getElementById('account-city');
+    var districtSelect = document.getElementById('account-district');
+    if (!citySelect || !districtSelect) return;
+
+    var addressData = window.VIETNAM_ADDRESSES || {};
+    var selectedCity = <?= json_encode((string) $profile['city'], JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var selectedDistrict = <?= json_encode((string) $profile['district'], JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+    Object.keys(addressData).sort(function (a, b) {
+        return a.localeCompare(b, 'vi');
+    }).forEach(function (city) {
+        var option = document.createElement('option');
+        option.value = city;
+        option.textContent = city;
+        if (city === selectedCity) option.selected = true;
+        citySelect.appendChild(option);
+    });
+
+    if (selectedCity && !addressData[selectedCity]) {
+        var customCity = document.createElement('option');
+        customCity.value = selectedCity;
+        customCity.textContent = selectedCity;
+        customCity.selected = true;
+        citySelect.appendChild(customCity);
+    }
+
+    function renderDistricts(preselect) {
+        var districts = addressData[citySelect.value] || [];
+        districtSelect.innerHTML = '<option value="">-- Chọn quận / huyện --</option>';
+        districts.forEach(function (district) {
+            var option = document.createElement('option');
+            option.value = district;
+            option.textContent = district;
+            if (district === preselect) option.selected = true;
+            districtSelect.appendChild(option);
+        });
+        if (preselect && districts.indexOf(preselect) === -1) {
+            var customDistrict = document.createElement('option');
+            customDistrict.value = preselect;
+            customDistrict.textContent = preselect;
+            customDistrict.selected = true;
+            districtSelect.appendChild(customDistrict);
+        }
+    }
+
+    renderDistricts(selectedDistrict);
+    citySelect.addEventListener('change', function () {
+        districtSelect.innerHTML = '<option value="">-- Chọn quận / huyện --</option>';
+        (addressData[citySelect.value] || []).forEach(function (district) {
+            var option = document.createElement('option');
+            option.value = district;
+            option.textContent = district;
+            districtSelect.appendChild(option);
+        });
+    });
+})();
+</script>

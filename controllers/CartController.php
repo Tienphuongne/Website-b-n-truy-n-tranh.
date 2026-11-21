@@ -34,17 +34,24 @@ class CartController extends BaseController
     public function add()
     {
         $this->requirePost();
+        $isAjax = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
         $id = filter_input(INPUT_POST, 'product_id', FILTER_VALIDATE_INT);
         $quantity = max(1, min(99, (int) ($_POST['quantity'] ?? 1)));
 
         try {
             $product = $id ? (new ProductModel())->find($id) : false;
         } catch (PDOException | RuntimeException $exception) {
+            if ($isAjax) {
+                $this->respondJson(['success' => false, 'message' => 'Chưa thể thêm sản phẩm vào giỏ. Vui lòng thử lại.'], 500);
+            }
             flash('danger', $this->reportDatabaseFailure($exception));
             redirect('products');
         }
 
         if (!$product || (int) $product['stock_quantity'] < 1) {
+            if ($isAjax) {
+                $this->respondJson(['success' => false, 'message' => 'Sản phẩm hiện không có sẵn.'], 422);
+            }
             flash('warning', 'Sản phẩm hiện không có sẵn.');
             redirect($id ? 'product/detail/' . $id : 'products');
         }
@@ -55,8 +62,46 @@ class CartController extends BaseController
             (int) $product['stock_quantity']
         );
         $_SESSION['cart'] = $cart;
+        if (isset($_POST['buy_now'])) {
+            flash('success', 'Đã thêm truyện vào giỏ hàng.');
+            redirect('checkout');
+        }
+
+        if ($isAjax) {
+            $this->respondJson([
+                'success' => true,
+                'message' => 'Đã thêm truyện vào giỏ hàng.',
+                'cart_count' => array_sum(array_map('intval', $cart)),
+            ]);
+        }
+
         flash('success', 'Đã thêm truyện vào giỏ hàng.');
-        redirect(isset($_POST['buy_now']) ? 'checkout' : 'cart');
+        $returnUrl = trim(request_string($_POST, 'return_url'));
+        if (
+            $returnUrl !== ''
+            && str_starts_with($returnUrl, '/')
+            && !str_starts_with($returnUrl, '//')
+        ) {
+            header('Location: ' . $returnUrl);
+            exit;
+        }
+
+        $referer = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($referer !== '' && $host !== '' && preg_match('#^https?://' . preg_quote($host, '#') . '(?:/|$)#i', $referer)) {
+            header('Location: ' . $referer);
+            exit;
+        }
+
+        redirect($_SERVER['REQUEST_URI'] ?? 'products');
+    }
+
+    private function respondJson(array $data, $status = 200)
+    {
+        http_response_code((int) $status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
 
     public function update()

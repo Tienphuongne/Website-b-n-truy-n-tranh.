@@ -44,9 +44,10 @@
                     <div><span>Thể loại</span><strong class="genre-links"><?php if ($genres): ?><?php foreach ($genres as $genre): ?><a href="<?= e(url('products?genre=' . (int) $genre['id'])) ?>"><?= e($genre['name']) ?></a><?php endforeach; ?><?php else: ?>Đang cập nhật<?php endif; ?></strong></div>
                     <div><span>Mã truyện</span><strong>#<?= (int) $product['id'] ?></strong></div>
                 </div>
-                <form action="<?= e(url('cart/add')) ?>" method="post" class="detail-actions">
+                <form action="<?= e(url('cart/add')) ?>" method="post" class="detail-actions" data-cart-add-form>
                     <?= csrf_field() ?>
                     <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                    <input type="hidden" name="return_url" value="<?= e($_SERVER['REQUEST_URI'] ?? ('/product/detail/' . (int) $product['id'])) ?>">
                     <label class="visually-hidden" for="quantity">Số lượng</label>
                     <div class="quantity-control">
                         <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Giảm số lượng" aria-controls="quantity" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>−</button>
@@ -83,15 +84,6 @@
             <?php if ($reviews): ?>
                 <div class="review-list"><?php foreach ($reviews as $review): ?><article class="review-item"><div class="review-heading"><strong><?= e($review['full_name']) ?></strong><span><?= str_repeat('★', (int) $review['rating']) ?><?= str_repeat('☆', 5 - (int) $review['rating']) ?></span></div><p><?= nl2br(e($review['content'] ?? '')) ?></p><small><?= e($review['created_at']) ?></small></article><?php endforeach; ?></div>
             <?php else: ?><div class="muted-panel">Chưa có đánh giá được duyệt cho truyện này.</div><?php endif; ?>
-            <?php if (!empty($_SESSION['user'])): ?>
-                <form class="review-form" action="<?= e(url('product/review')) ?>" method="post">
-                    <?= csrf_field() ?><input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
-                    <h3>Chia sẻ cảm nhận của bạn</h3>
-                    <label class="form-label" for="review-rating">Đánh giá</label><select class="form-select mb-3" id="review-rating" name="rating"><option value="5">5 sao</option><option value="4">4 sao</option><option value="3">3 sao</option><option value="2">2 sao</option><option value="1">1 sao</option></select>
-                    <label class="form-label" for="review-content">Nhận xét</label><textarea class="form-control mb-3" id="review-content" name="content" rows="3" maxlength="3000"></textarea>
-                    <button class="btn btn-primary" type="submit">Gửi đánh giá</button>
-                </form>
-            <?php else: ?><p class="review-login-prompt"><a href="<?= e(url('login')) ?>">Đăng nhập</a> để gửi đánh giá.</p><?php endif; ?>
         </section>
         <?php if ($related): ?>
             <section class="related-section">

@@ -5,7 +5,7 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
 ## Chạy dự án
 
 1. Cấu hình Apache để thư mục dự án là document root và bật `mod_rewrite`/AllowOverride để dùng `.htaccess`.
-2. Tạo database và các bảng bằng cách import `database/schema.sql` vào MySQL.
+2. Tạo database và các bảng bằng cách import `database/schema.sql` vào MySQL. Với website đã cài đặt, chạy thêm `database/migrations/20261121_create_return_requests.sql`.
 3. Cấu hình biến môi trường cho tiến trình PHP:
 
    ```text
@@ -30,7 +30,7 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
    UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
    ```
 
-5. Ảnh bìa có thể đặt trong `assets/uploads/`; lưu đường dẫn tương đối trong `products.cover_image`. Ngoài ra trang quản trị hỗ trợ tải ảnh trực tiếp (JPG/PNG/WEBP/GIF, tối đa 5MB) vào `assets/uploads/products/`, nên thư mục `assets/uploads/` cần quyền ghi của tiến trình PHP.
+5. Ảnh bìa có thể đặt trong `assets/uploads/`; lưu đường dẫn tương đối trong `products.cover_image`. Ngoài ra trang quản trị hỗ trợ tải ảnh trực tiếp (JPG/PNG/WEBP/GIF, tối đa 5MB) vào `assets/uploads/products/`, nên thư mục `assets/uploads/` cần quyền ghi của tiến trình PHP. Để nhận video trả hàng tối đa 50MB cùng 4 ảnh, cấu hình PHP `upload_max_filesize=50M`, `post_max_size=75M` và `max_file_uploads=5` trở lên.
 
 Nếu chưa cấu hình `DB_NAME` hoặc database chưa khả dụng, trang cửa hàng vẫn hiển thị layout và empty state. Không có dữ liệu giả được tự tạo.
 
@@ -50,6 +50,7 @@ Các chức năng quản trị chính:
 
 - Sản phẩm: thêm/sửa/xóa, tải ảnh bìa, chọn nhiều thể loại và quản lý thư viện ảnh.
 - Đơn hàng: xem chi tiết khách hàng, sản phẩm, phí vận chuyển/giảm giá và cập nhật trạng thái.
+- Trả hàng/hoàn tiền: khách có thể gửi yêu cầu từ đơn đã hoàn tất, kèm lý do, mô tả bắt buộc, đúng 4 ảnh và 1 video. Quản trị viên xem minh chứng, duyệt hoặc từ chối tại mục **Yêu cầu trả hàng**; khi duyệt, hệ thống ghi nhận trạng thái thanh toán là đã hoàn tiền. Thanh toán thực tế qua ngân hàng/cổng thanh toán vẫn cần được xử lý thủ công.
 - Liên hệ: theo dõi và đổi trạng thái tin nhắn từ trang liên hệ.
 - Thống kê: doanh thu 7 ngày gần nhất trên dashboard và báo cáo theo khoảng ngày tại `/admin/reports` (tối đa 5 năm gần nhất).
 

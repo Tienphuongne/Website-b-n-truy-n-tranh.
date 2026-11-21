@@ -1,5 +1,24 @@
 <?php
-$heroSlides = array_slice(!empty($featured) ? $featured : $latest, 0, 4);
+$heroSeries = [
+    ['match' => 'Jujutsu Kaisen', 'image' => 'jujutsu-kaisen.jpg'],
+    ['match' => 'Kimetsu no Yaiba', 'image' => 'kimetsu-no-yaiba.jpg'],
+    ['match' => 'Naruto', 'image' => 'naruto.webp'],
+    ['match' => 'One Piece', 'image' => 'one-piece.jpg'],
+];
+$heroProducts = [];
+foreach (array_merge($featured ?? [], $latest ?? [], $bestSellers ?? [], $discounted ?? []) as $product) {
+    $heroProducts[(int) $product['id']] = $product;
+}
+$heroSlides = [];
+foreach ($heroSeries as $series) {
+    foreach ($heroProducts as $product) {
+        if (stripos((string) ($product['name'] ?? ''), $series['match']) !== false) {
+            $product['hero_image'] = $series['image'];
+            $heroSlides[] = $product;
+            break;
+        }
+    }
+}
 $splitHeroTitle = static function ($name) {
     $name = trim((string) $name);
     $separator = mb_strpos($name, ' - ');
@@ -21,8 +40,8 @@ if (!empty($discounted)) {
 $lovedFallback = !empty($bestSellers) ? $bestSellers : $featured;
 $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lovedFallback, 0, 3);
 ?>
-<section class="hero-section hero-carousel" data-hero-carousel data-interval="6500" aria-roledescription="carousel" aria-label="Truyện nổi bật của tuần">
-    <div class="container hero-content">
+<section class="hero-section hero-carousel" data-hero-carousel data-interval="3000" aria-roledescription="carousel" aria-label="Truyện nổi bật của tuần">
+    <div class="hero-content">
         <?php if (!empty($heroSlides)): ?>
             <div class="hero-slides">
                 <?php foreach ($heroSlides as $slideIndex => $slide): ?>
@@ -42,7 +61,10 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lo
                     $slideUrl = url('product/detail/' . (int) $slide['id']);
                     ?>
                     <article class="hero-slide<?= $slideActive ? ' is-active' : '' ?>" data-hero-slide role="group" aria-roledescription="slide" aria-label="<?= $slideIndex + 1 ?> / <?= count($heroSlides) ?>: <?= e($slide['name']) ?>"<?= $slideActive ? '' : ' aria-hidden="true"' ?>>
-                        <div class="hero-copy">
+                        <a class="hero-background" href="<?= e($slideUrl) ?>" aria-label="Xem truyện <?= e($slide['name']) ?>">
+                            <img src="<?= e(url('assets/images/hero/' . $slide['hero_image'])) ?>" alt="" aria-hidden="true" <?= $slideActive ? 'fetchpriority="high"' : 'loading="lazy"' ?>>
+                        </a>
+                        <div class="hero-copy container">
                             <span class="eyebrow"><?= e($slide['category_name'] ?? 'Truyện nổi bật') ?><?php if (!empty($slide['author_name'])): ?> · <?= e($slide['author_name']) ?><?php endif; ?></span>
                             <h1><?= e($slideSeries) ?><?php if ($slideVolume !== ''): ?><br><span><?= e($slideVolume) ?></span><?php endif; ?></h1>
                             <?php if ($slideDescription !== ''): ?><p><?= e($slideDescription) ?></p><?php endif; ?>
@@ -55,27 +77,20 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lo
                             </div>
                             <div class="hero-actions">
                                 <a class="btn btn-primary btn-lg" href="<?= e($slideUrl) ?>">Xem chi tiết <span aria-hidden="true">→</span></a>
+                                <form action="<?= e(url('cart/add')) ?>" method="post" class="hero-buy-form">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="product_id" value="<?= (int) $slide['id'] ?>">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button class="btn btn-light btn-lg" type="submit" name="buy_now" value="1" <?= $slideStock < 1 ? 'disabled' : '' ?>>Mua ngay <span aria-hidden="true">→</span></button>
+                                </form>
                                 <span class="hero-stock<?= $slideStock < 1 ? ' is-out' : '' ?>"><?= $slideStock < 1 ? 'Tạm hết hàng' : 'Còn ' . $slideStock . ' cuốn' ?></span>
                             </div>
-                        </div>
-                        <div class="hero-art">
-                            <div class="hero-spark spark-one" aria-hidden="true">✦</div><div class="hero-spark spark-two" aria-hidden="true">✧</div>
-                            <div class="hero-orbit" aria-hidden="true"></div>
-                            <div class="hero-book book-back" aria-hidden="true"></div>
-                            <a class="hero-book-cover" href="<?= e($slideUrl) ?>" aria-label="Xem chi tiết <?= e($slide['name']) ?>">
-                                <?php if (!empty($slide['cover_image'])): ?>
-                                    <img src="<?= e(product_image_url($slide['cover_image'])) ?>" alt="Bìa truyện <?= e($slide['name']) ?>" <?= $slideActive ? 'fetchpriority="high"' : 'loading="lazy"' ?>>
-                                <?php else: ?>
-                                    <span class="hero-cover-placeholder"><span>✦</span><small>TRUYENTHUVI</small></span>
-                                <?php endif; ?>
-                                <?php if ($slideDiscount > 0): ?><span class="hero-cover-badge">-<?= $slideDiscount ?>%</span><?php endif; ?>
-                            </a>
                         </div>
                     </article>
                 <?php endforeach; ?>
             </div>
             <?php if (count($heroSlides) > 1): ?>
-                <div class="hero-controls">
+                <div class="hero-controls container">
                     <button class="hero-arrow" type="button" data-hero-prev aria-label="Truyện trước"><span aria-hidden="true">←</span></button>
                     <div class="hero-dots">
                         <?php foreach ($heroSlides as $slideIndex => $slide): ?>
@@ -88,7 +103,7 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lo
                 <div class="hero-progress" aria-hidden="true"><span></span></div>
             <?php endif; ?>
         <?php else: ?>
-            <div class="hero-copy">
+            <div class="hero-copy container">
                 <span class="eyebrow">MỞ TRANG SÁCH, MỞ THẾ GIỚI</span>
                 <h1>Mỗi câu chuyện<br><span>là một cuộc phiêu lưu.</span></h1>
                 <p>Chọn cuốn truyện tiếp theo cho bộ sưu tập của bạn — từ những hành trình kỳ ảo đến câu chuyện đời thường đầy cảm xúc.</p>

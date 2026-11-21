@@ -16,12 +16,17 @@ $columnLabels = [
     'role' => 'Vai trò',
     'product_id' => 'Mã sản phẩm',
     'user_id' => 'Mã người dùng',
+    'order_id' => 'Mã đơn hàng',
     'rating' => 'Điểm đánh giá',
+    'reason' => 'Lý do trả hàng',
     'code' => 'Mã giảm giá',
     'discount_type' => 'Kiểu giảm giá',
     'discount_value' => 'Giá trị giảm',
     'starts_at' => 'Ngày bắt đầu',
     'ends_at' => 'Ngày kết thúc',
+    'usage_limit' => 'Giới hạn lượt dùng',
+    'used_count' => 'Số lượt đã dùng',
+    'available_count' => 'Số lượt còn lại',
     'message' => 'Nội dung',
 ];
 $valueLabels = [
@@ -38,6 +43,16 @@ $valueLabels = [
             'shipping' => 'Đang giao',
             'completed' => 'Hoàn tất',
             'cancelled' => 'Đã hủy',
+        ],
+    ],
+    'returns' => [
+        'status' => ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Đã từ chối'],
+        'reason' => [
+            'defective' => 'Hàng bị lỗi',
+            'damaged' => 'Hàng bị hỏng',
+            'wrong_item' => 'Giao sai hàng',
+            'missing_item' => 'Thiếu sản phẩm',
+            'other' => 'Lý do khác',
         ],
     ],
     'contacts' => [
@@ -69,7 +84,9 @@ $formatPercent = static function ($value) {
     <?php if (!empty($resource['rows'])): ?>
         <div class="table-responsive"><table class="table align-middle"><thead><tr><?php foreach (array_keys($resource['rows'][0]) as $column): ?><th><?= e($columnLabels[$column] ?? $column) ?></th><?php endforeach; ?><th>Thao tác</th></tr></thead><tbody>
             <?php foreach ($resource['rows'] as $row): ?><tr><?php foreach ($row as $column => $value): ?><td><?php
-                if ($value === null) {
+                if ($resourceKey === 'coupons' && $column === 'available_count' && $value === null) {
+                    $displayValue = 'Không giới hạn';
+                } elseif ($value === null) {
                     $displayValue = '—';
                 } elseif ($resourceKey === 'coupons' && $column === 'discount_value') {
                     $displayValue = $row['discount_type'] === 'fixed' ? $formatCurrency($value) : $formatPercent($value);
@@ -80,9 +97,18 @@ $formatPercent = static function ($value) {
                 }
                 echo e($displayValue);
                 ?></td><?php endforeach; ?><td class="admin-row-actions">
+                <?php
+                $couponExpired = $resourceKey === 'coupons'
+                    && !empty($row['ends_at'])
+                    && strtotime((string) $row['ends_at']) < time();
+                ?>
+                <?php if ($couponExpired): ?>
+                    <span class="badge bg-secondary">Ngừng hoạt động</span>
+                <?php else: ?>
                 <?php if (!empty($definition['detail'])): ?><a class="btn btn-sm btn-outline-primary" href="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/detail?id=' . (int) $row['id'])) ?>">Xem</a><?php endif; ?>
                 <?php if (!empty($definition['edit'])): ?><a class="btn btn-sm btn-outline-secondary" href="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/edit?id=' . (int) $row['id'])) ?>">Sửa</a><?php endif; ?>
                 <?php if (!empty($definition['delete'])): ?><form method="post" action="<?= e(url('admin/' . ($_GET['resource'] ?? '') . '/delete')) ?>" data-confirm="Bạn có chắc muốn xóa bản ghi này?"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $row['id'] ?>"><button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button></form><?php endif; ?>
+                <?php endif; ?>
             </td></tr><?php endforeach; ?>
         </tbody></table></div>
         <p class="small text-muted mb-0">Đang hiển thị tối đa 100 bản ghi gần nhất.</p>
