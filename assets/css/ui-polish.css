@@ -468,6 +468,28 @@ a { transition: color .15s ease; }
 .account-order-totals .is-total { border-top: 1px solid #f1e6df; margin-top: 6px; padding-top: 9px; }
 .account-order-totals .is-total strong { color: var(--accent-dark); font-size: 15px; font-weight: 800; }
 .account-order-detail > .text-link { display: inline-block; font-size: 10px; margin-top: 14px; }
+.order-status-tabs { display: flex; gap: 7px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+.order-status-tabs a { align-items: center; border: 1px solid #eee6df; border-radius: 999px; color: #777980; display: inline-flex; flex: 0 0 auto; font-size: 10px; font-weight: 700; gap: 6px; padding: 7px 10px; text-decoration: none; }
+.order-status-tabs a span { background: #f3f1ef; border-radius: 999px; font-size: 9px; min-width: 20px; padding: 2px 5px; text-align: center; }
+.order-status-tabs a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.order-status-tabs a.active span { background: rgba(255,255,255,.22); }
+.account-form .field-hint { color: #92939a; display: block; font-size: 9px; margin-top: 5px; }
+.account-form > .btn { margin-top: 16px; }
+.birth-date-fields { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.birth-date-fields .form-select { border-color: #e9e5e2; border-radius: 10px; font-size: 12px; min-height: 45px; }
+.account-form .form-select { border-color: #e9e5e2; border-radius: 10px; font-size: 12px; min-height: 45px; }
+.account-review-box { border-top: 1px solid #f1e6df; margin-top: 16px; padding-top: 14px; }
+.account-review-box h3 { font-size: 13px; font-weight: 800; margin-bottom: 10px; }
+.account-review-item { background: #fff; border: 1px solid #eee5df; border-radius: 9px; margin-bottom: 8px; padding: 12px; }
+.account-review-item > strong { display: block; font-size: 11px; margin-bottom: 7px; }
+.account-review-item p { font-size: 11px; margin: 5px 0; }
+.account-review-item small { color: #92939a; font-size: 9px; }
+.review-stars { color: #f4b400; letter-spacing: 1px; }
+.account-review-form .form-select, .account-review-form .form-control { font-size: 11px; }
+.order-detail-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 7px; }
+.order-detail-actions form { margin: 0; }
+.profile-form-actions { display: flex; gap: 8px; margin-top: 16px; }
+.account-form fieldset[data-profile-fields] { border: 0; margin: 0; min-width: 0; padding: 0; }
 
 @media (max-width: 575px) {
     .account-order-meta { grid-template-columns: 1fr; }

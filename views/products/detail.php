@@ -47,6 +47,7 @@
                 <form action="<?= e(url('cart/add')) ?>" method="post" class="detail-actions">
                     <?= csrf_field() ?>
                     <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+                    <input type="hidden" name="return_url" value="<?= e($_SERVER['REQUEST_URI'] ?? ('/product/detail/' . (int) $product['id'])) ?>">
                     <label class="visually-hidden" for="quantity">Số lượng</label>
                     <div class="quantity-control">
                         <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Giảm số lượng" aria-controls="quantity" <?= (int) $product['stock_quantity'] < 1 ? 'disabled' : '' ?>>−</button>

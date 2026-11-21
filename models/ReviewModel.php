@@ -27,4 +27,15 @@ class ReviewModel extends BaseModel
             ]
         );
     }
+
+    public function getForUserProduct($userId, $productId)
+    {
+        return $this->execute(
+            'SELECT rating, content, status, created_at
+             FROM reviews
+             WHERE user_id = :user_id AND product_id = :product_id
+             LIMIT 1',
+            ['user_id' => (int) $userId, 'product_id' => (int) $productId]
+        )->fetch();
+    }
 }
