@@ -90,7 +90,7 @@
                                     <td><?= e($formatOrderDate($order['created_at'])) ?></td>
                                     <td><strong><?= number_format((float) $order['total_amount'], 0, ',', '.') ?>₫</strong></td>
                                     <td><span class="order-status-badge status-<?= e($orderStatus) ?>"><?= e($statusLabels[$orderStatus] ?? $orderStatus) ?></span></td>
-                                    <td><a href="<?= e(url('account?tab=orders&order=' . (int) $order['id'])) ?>"><?= $isSelected ? 'Đang xem' : 'Chi tiết' ?> <span aria-hidden="true">→</span></a></td>
+                                    <td><a href="<?= e(url('account?tab=orders&status=' . rawurlencode($orderStatusFilter) . '&order=' . (int) $order['id'])) ?>"><?= $isSelected ? 'Đang xem' : 'Chi tiết' ?> <span aria-hidden="true">→</span></a></td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>
