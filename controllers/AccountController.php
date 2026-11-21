@@ -20,6 +20,40 @@ class AccountController extends BaseController
         $orderNotFound = false;
         $voucherSummary = ['available' => 0, 'used' => 0, 'total' => 0, 'codes' => []];
         $databaseError = null;
+        $orderStatusFilter = (string) ($_GET['status'] ?? 'pending');
+
+        try {
+            $model = new UserModel();
+            $model->ensureProfileColumns();
+            $profileRecord = $model->findById($userId);
+            if (!$profileRecord) {
+                flash('danger', 'Không tìm thấy tài khoản.');
+                redirect('logout');
+            }
+            $profile = [
+                'full_name' => (string) ($profileRecord['full_name'] ?? $_SESSION['user']['name']),
+                'birth_date' => (string) ($profileRecord['birth_date'] ?? ''),
+                'phone' => (string) ($profileRecord['phone'] ?? ''),
+                'email' => (string) ($profileRecord['email'] ?? $userEmail),
+                'city' => (string) ($profileRecord['city'] ?? ''),
+                'district' => (string) ($profileRecord['district'] ?? ''),
+                'address' => (string) ($profileRecord['address'] ?? ''),
+            ];
+            $_SESSION['user']['name'] = $profile['full_name'];
+            $_SESSION['user']['email'] = $profile['email'];
+            $_SESSION['user']['phone'] = $profile['phone'];
+        } catch (PDOException | RuntimeException $exception) {
+            $profile = [
+                'full_name' => (string) ($_SESSION['user']['name'] ?? ''),
+                'birth_date' => null,
+                'phone' => (string) ($_SESSION['user']['phone'] ?? ''),
+                'email' => $userEmail,
+                'city' => '',
+                'district' => '',
+                'address' => '',
+            ];
+            $databaseError = $this->reportDatabaseFailure($exception);
+        }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->requirePost();
@@ -39,13 +73,47 @@ class AccountController extends BaseController
                 if (($_POST['form_type'] ?? '') === 'profile') {
                     $profile = [
                         'full_name' => trim(request_string($_POST, 'full_name')),
+                        'birth_day' => (int) trim(request_string($_POST, 'birth_day')),
+                        'birth_month' => (int) trim(request_string($_POST, 'birth_month')),
+                        'birth_year' => (int) trim(request_string($_POST, 'birth_year')),
                         'phone' => trim(request_string($_POST, 'phone')),
+                        'email' => trim(request_string($_POST, 'email')),
+                        'city' => trim(request_string($_POST, 'city')),
+                        'district' => trim(request_string($_POST, 'district')),
+                        'address' => trim(request_string($_POST, 'address')),
+                        'birth_date' => null,
                     ];
+                    $birthComplete = $profile['birth_day'] > 0 || $profile['birth_month'] > 0 || $profile['birth_year'] > 0;
+                    if ($birthComplete) {
+                        $profileValidBirth = $profile['birth_day'] >= 1
+                            && $profile['birth_day'] <= 31
+                            && $profile['birth_month'] >= 1
+                            && $profile['birth_month'] <= 12
+                            && $profile['birth_year'] >= 1900
+                            && $profile['birth_year'] <= (int) date('Y')
+                            && checkdate($profile['birth_month'], $profile['birth_day'], $profile['birth_year']);
+                        if (!$profileValidBirth) {
+                            flash('danger', 'Ngày sinh không hợp lệ.');
+                            redirect('account');
+                        }
+                        $profile['birth_date'] = sprintf(
+                            '%04d-%02d-%02d',
+                            $profile['birth_year'],
+                            $profile['birth_month'],
+                            $profile['birth_day']
+                        );
+                    }
                     if ($profile['full_name'] === '') {
                         flash('danger', 'Họ tên không được để trống.');
+                    } elseif (!filter_var($profile['email'], FILTER_VALIDATE_EMAIL)) {
+                        flash('danger', 'Email không hợp lệ.');
+                    } elseif ($model->emailExistsForOther($profile['email'], $userId)) {
+                        flash('danger', 'Email này đã được sử dụng bởi tài khoản khác.');
                     } else {
+                        $model->ensureProfileColumns();
                         $model->updateProfile($userId, $profile);
                         $_SESSION['user']['name'] = $profile['full_name'];
+                        $_SESSION['user']['email'] = $profile['email'];
                         $_SESSION['user']['phone'] = $profile['phone'];
                         flash('success', 'Đã cập nhật thông tin tài khoản.');
                     }
@@ -82,6 +150,41 @@ class AccountController extends BaseController
             $orderModel = new OrderModel();
             $orders = $orderModel->getForUser($userId, $userEmail);
             $voucherSummary = (new CouponModel())->getAvailabilityForUser($userId, $userEmail);
+
+            $orderStatusCounts = [
+                'pending' => 0,
+                'pickup' => 0,
+                'shipping' => 0,
+                'review' => 0,
+                'cancelled' => 0,
+            ];
+            foreach ($orders as $order) {
+                $status = (string) $order['status'];
+                if ($status === 'pending') {
+                    $orderStatusCounts['pending']++;
+                } elseif ($status === 'confirmed') {
+                    $orderStatusCounts['pickup']++;
+                } elseif ($status === 'shipping') {
+                    $orderStatusCounts['shipping']++;
+                } elseif ($status === 'completed') {
+                    $orderStatusCounts['review']++;
+                } elseif ($status === 'cancelled') {
+                    $orderStatusCounts['cancelled']++;
+                }
+            }
+            $statusDatabaseMap = [
+                'pending' => 'pending',
+                'pickup' => 'confirmed',
+                'shipping' => 'shipping',
+                'review' => 'completed',
+                'cancelled' => 'cancelled',
+            ];
+            if (isset($statusDatabaseMap[$orderStatusFilter])) {
+                $orders = array_values(array_filter(
+                    $orders,
+                    static fn($order) => (string) $order['status'] === $statusDatabaseMap[$orderStatusFilter]
+                ));
+            }
 
             if ($tab === 'orders' && $requestedOrderId > 0) {
                 foreach ($orders as $order) {
