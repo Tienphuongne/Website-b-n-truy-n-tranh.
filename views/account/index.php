@@ -7,6 +7,8 @@
             <a class="<?= $tab === 'profile' ? 'active' : '' ?>" href="<?= e(url('account')) ?>">Thông tin cá nhân</a>
             <a class="<?= $tab === 'password' ? 'active' : '' ?>" href="<?= e(url('account?tab=password')) ?>">Đổi mật khẩu</a>
             <a class="<?= $tab === 'orders' ? 'active' : '' ?>" href="<?= e(url('account?tab=orders')) ?>">Lịch sử đơn hàng</a>
+            <a class="<?= $tab === 'wishlist' ? 'active' : '' ?>" href="<?= e(url('account?tab=wishlist')) ?>">Yêu thích (<?= count($wishlistProducts) ?>)</a>
+            <a class="<?= $tab === 'addresses' ? 'active' : '' ?>" href="<?= e(url('account?tab=addresses')) ?>">Sổ địa chỉ</a>
 
             <div class="account-voucher-card" title="Số mã ưu đãi còn dùng được, đã trừ mã đã sử dụng">
                 <span class="voucher-mini-icon" aria-hidden="true">✦</span>
@@ -142,6 +144,108 @@
                 <?php else: ?>
                     <div class="muted-panel">Bạn chưa có đơn hàng nào. <a href="<?= e(url('products')) ?>">Khám phá truyện ngay</a>.</div>
                 <?php endif; ?>
+            <?php elseif ($tab === 'wishlist'): ?>
+                <div class="account-section-head">
+                    <div><h2>Truyện yêu thích</h2><p>Những đầu truyện bạn đã lưu để đọc sau.</p></div>
+                    <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('products')) ?>">Tìm thêm truyện</a>
+                </div>
+                <?php if ($wishlistProducts): ?>
+                    <div class="product-grid wishlist-grid">
+                        <?php foreach ($wishlistProducts as $product): require PATH_VIEW . 'components/product-card.php'; endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="muted-panel">Bạn chưa lưu truyện nào. Bấm ♡ trên thẻ truyện để thêm vào danh sách yêu thích.</div>
+                <?php endif; ?>
+            <?php elseif ($tab === 'addresses'): ?>
+                <div class="account-section-head">
+                    <div><h2>Sổ địa chỉ</h2><p>Lưu địa chỉ để điền nhanh khi thanh toán.</p></div>
+                </div>
+                <?php if ($addresses): ?>
+                    <div class="address-list">
+                        <?php foreach ($addresses as $address): ?>
+                            <?php
+                            $addressLines = array_filter([
+                                $address['address'] ?? '',
+                                $address['ward'] ?? '',
+                                $address['district'] ?? '',
+                                $address['city'] ?? '',
+                            ]);
+                            ?>
+                            <article class="address-item<?= !empty($address['is_default']) ? ' is-default' : '' ?>">
+                                <div class="address-item-head">
+                                    <strong><?= e($address['label']) ?></strong>
+                                    <?php if (!empty($address['is_default'])): ?><span class="address-default-badge">Mặc định</span><?php endif; ?>
+                                </div>
+                                <p><?= e($address['full_name']) ?> · <?= e($address['phone']) ?></p>
+                                <p class="address-lines"><?= e(implode(', ', $addressLines)) ?></p>
+                                <div class="address-actions">
+                                    <?php if (empty($address['is_default'])): ?>
+                                        <form method="post" action="<?= e(url('account?tab=addresses')) ?>">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="form_type" value="address_default">
+                                            <input type="hidden" name="address_id" value="<?= (int) $address['id'] ?>">
+                                            <button class="btn btn-sm btn-outline-primary" type="submit">Đặt mặc định</button>
+                                        </form>
+                                    <?php endif; ?>
+                                    <a class="btn btn-sm btn-outline-secondary" href="<?= e(url('account?tab=addresses&edit=' . (int) $address['id'])) ?>">Sửa</a>
+                                    <form method="post" action="<?= e(url('account?tab=addresses')) ?>" data-confirm="Bạn có chắc muốn xóa địa chỉ này?">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="form_type" value="address_delete">
+                                        <input type="hidden" name="address_id" value="<?= (int) $address['id'] ?>">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                                    </form>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="muted-panel">Bạn chưa lưu địa chỉ nào.</div>
+                <?php endif; ?>
+
+                <h3 class="address-form-title"><?= $editingAddress ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới' ?></h3>
+                <form method="post" action="<?= e(url('account?tab=addresses')) ?>" class="account-form address-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="form_type" value="<?= $editingAddress ? 'address_update' : 'address_create' ?>">
+                    <?php if ($editingAddress): ?><input type="hidden" name="address_id" value="<?= (int) $editingAddress['id'] ?>"><?php endif; ?>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="address-label">Tên gọi</label>
+                            <input class="form-control" id="address-label" name="label" maxlength="60" placeholder="Nhà, Văn phòng…" value="<?= e($editingAddress['label'] ?? '') ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="address-phone">Số điện thoại *</label>
+                            <input class="form-control" id="address-phone" name="phone" required value="<?= e($editingAddress['phone'] ?? '') ?>">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="address-full-name">Họ và tên *</label>
+                            <input class="form-control" id="address-full-name" name="full_name" required value="<?= e($editingAddress['full_name'] ?? $_SESSION['user']['name']) ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="address-city">Tỉnh / thành phố *</label>
+                            <input class="form-control" id="address-city" name="city" required value="<?= e($editingAddress['city'] ?? '') ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="address-district">Quận / huyện</label>
+                            <input class="form-control" id="address-district" name="district" value="<?= e($editingAddress['district'] ?? '') ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="address-ward">Phường / xã</label>
+                            <input class="form-control" id="address-ward" name="ward" value="<?= e($editingAddress['ward'] ?? '') ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="address-street">Số nhà, tên đường *</label>
+                            <input class="form-control" id="address-street" name="address" required value="<?= e($editingAddress['address'] ?? '') ?>">
+                        </div>
+                    </div>
+                    <label class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="is_default" value="1" <?= !empty($editingAddress['is_default']) ? 'checked' : '' ?>>
+                        <span class="form-check-label">Đặt làm địa chỉ mặc định</span>
+                    </label>
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-primary" type="submit">Lưu địa chỉ</button>
+                        <?php if ($editingAddress): ?><a class="btn btn-outline-secondary" href="<?= e(url('account?tab=addresses')) ?>">Hủy sửa</a><?php endif; ?>
+                    </div>
+                </form>
             <?php else: ?>
                 <h2>Thông tin cá nhân</h2>
                 <form method="post" action="<?= e(url('account')) ?>" class="account-form">

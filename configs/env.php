@@ -77,3 +77,8 @@ if ($fallbackModels === false || $fallbackModels === '') {
 }
 define('AI_MODEL_FALLBACKS', array_values(array_filter(array_map('trim', explode(',', $fallbackModels)))));
 unset($fallbackModels);
+
+// Môi trường chạy: đặt APP_ENV=local để hiển thị link đặt lại mật khẩu trên màn hình
+// khi chưa cấu hình email. Production luôn gửi link qua email.
+define('APP_ENV', strtolower(getenv('APP_ENV') ?: 'production'));
+define('MAIL_FROM', getenv('MAIL_FROM') ?: '');

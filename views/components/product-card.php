@@ -1,5 +1,18 @@
-<?php $isOutOfStock = (int) ($product['stock_quantity'] ?? 0) < 1; ?>
+<?php
+$isOutOfStock = (int) ($product['stock_quantity'] ?? 0) < 1;
+$isWished = in_array((int) ($product['id'] ?? 0), wishlist_ids(), true);
+?>
 <article class="product-card<?= $isOutOfStock ? ' is-out-of-stock' : '' ?>">
+    <?php if (!empty($_SESSION['user'])): ?>
+        <form class="wishlist-form" action="<?= e(url('wishlist/toggle')) ?>" method="post">
+            <?= csrf_field() ?>
+            <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+            <input type="hidden" name="return" value="<?= e(current_path()) ?>">
+            <button class="wishlist-btn<?= $isWished ? ' is-active' : '' ?>" type="submit" aria-label="<?= $isWished ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích' ?>" title="<?= $isWished ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích' ?>"><?= $isWished ? '♥' : '♡' ?></button>
+        </form>
+    <?php else: ?>
+        <a class="wishlist-btn" href="<?= e(url('login')) ?>" aria-label="Đăng nhập để lưu yêu thích" title="Đăng nhập để lưu yêu thích">♡</a>
+    <?php endif; ?>
     <a class="product-cover" href="<?= e(url('product/detail/' . (int) $product['id'])) ?>">
         <?php if (!empty($product['cover_image'])): ?>
             <img src="<?= e(product_image_url($product['cover_image'])) ?>" alt="Bìa truyện <?= e($product['name']) ?>" loading="lazy" onerror="showCoverFallback(this)">

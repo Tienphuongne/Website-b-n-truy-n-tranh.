@@ -2,7 +2,7 @@
 
 class CheckoutController extends BaseController
 {
-    private $shippingFee = 30000;
+    private $shippingFees = ['standard' => 30000, 'express' => 60000];
 
     public function index()
     {
@@ -16,9 +16,34 @@ class CheckoutController extends BaseController
         $voucherSummary = ['available' => 0, 'used' => 0, 'total' => 0, 'codes' => []];
 
         $savedAddresses = [];
+        $shippingMethod = 'standard';
+        $shippingFee = $this->shippingFees['standard'];
         if ($userId > 0) {
             try {
-                $savedAddresses = (new OrderModel())->getSavedAddresses($userId);
+                $addressRows = (new AddressModel())->listForUser($userId);
+                $orderRows = (new OrderModel())->getSavedAddresses($userId);
+                $seenAddresses = [];
+                foreach (array_merge($addressRows, $orderRows) as $row) {
+                    $key = mb_strtolower(trim(
+                        ($row['phone'] ?? '') . '|' . ($row['city'] ?? '') . '|'
+                        . ($row['district'] ?? '') . '|' . ($row['address'] ?? '')
+                    ));
+                    if (isset($seenAddresses[$key])) {
+                        continue;
+                    }
+                    $seenAddresses[$key] = true;
+                    $savedAddresses[] = [
+                        'id' => isset($row['id']) ? (int) $row['id'] : 0,
+                        'label' => $row['label'] ?? '',
+                        'customer_name' => $row['full_name'] ?? $row['customer_name'] ?? '',
+                        'phone' => $row['phone'] ?? '',
+                        'email' => $row['email'] ?? '',
+                        'city' => $row['city'] ?? '',
+                        'district' => $row['district'] ?? '',
+                        'ward' => $row['ward'] ?? '',
+                        'address' => $row['address'] ?? '',
+                    ];
+                }
                 $voucherSummary = (new CouponModel())->getAvailabilityForUser($userId, $userEmail);
             } catch (PDOException | RuntimeException $exception) {
                 // Không làm gián đoạn thanh toán nếu không tải được địa chỉ / voucher.
@@ -77,7 +102,12 @@ class CheckoutController extends BaseController
                 'note' => trim(request_string($_POST, 'note')),
             ];
             $paymentMethod = $_POST['payment_method'] ?? 'cod';
-            $errors = $this->validate($customer, $paymentMethod);
+            $shippingMethod = $_POST['shipping_method'] ?? 'standard';
+            if (!array_key_exists($shippingMethod, $this->shippingFees)) {
+                $shippingMethod = 'standard';
+            }
+            $shippingFee = $this->shippingFees[$shippingMethod];
+            $errors = $this->validate($customer, $paymentMethod, $shippingMethod);
 
             if ($errors) {
                 flash('danger', implode(' ', $errors));
@@ -105,9 +135,10 @@ class CheckoutController extends BaseController
                         $customer,
                         $cartItems,
                         $paymentMethod,
-                        $this->shippingFee,
+                        $shippingFee,
                         $_SESSION['user']['id'] ?? null,
-                        $coupon ? (int) $coupon['id'] : null
+                        $coupon ? (int) $coupon['id'] : null,
+                        $shippingMethod
                     );
                     $_SESSION['cart'] = [];
                     unset($_SESSION['coupon']);
@@ -169,7 +200,7 @@ class CheckoutController extends BaseController
         return $items;
     }
 
-    private function validate(array $customer, $paymentMethod)
+    private function validate(array $customer, $paymentMethod, $shippingMethod = 'standard')
     {
         $errors = [];
         foreach (['full_name', 'phone', 'city', 'district', 'address'] as $field) {
@@ -184,6 +215,9 @@ class CheckoutController extends BaseController
         $allowedMethods = ['cod', 'bank_transfer', 'vnpay', 'momo', 'card'];
         if (!in_array($paymentMethod, $allowedMethods, true)) {
             $errors[] = 'Phương thức thanh toán không hợp lệ.';
+        }
+        if (!array_key_exists($shippingMethod, $this->shippingFees)) {
+            $errors[] = 'Phương thức vận chuyển không hợp lệ.';
         }
 
         return $errors;

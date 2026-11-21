@@ -14,6 +14,7 @@
                 <a class="account-link" href="<?= e(url('admin')) ?>"><span>Quản trị</span></a>
             <?php endif; ?>
             <?php if (!empty($_SESSION['user'])): ?>
+                <a class="account-link wishlist-link" href="<?= e(url('account?tab=wishlist')) ?>" title="Truyện yêu thích"><span class="header-icon">♥</span><b class="wishlist-count"><?= count(wishlist_ids()) ?></b></a>
                 <a class="account-link" href="<?= e(url('account')) ?>"><span class="header-icon">♙</span><span><?= e($_SESSION['user']['name']) ?></span></a>
             <?php else: ?>
                 <a class="account-link" href="<?= e(url('login')) ?>"><span class="header-icon">♙</span><span>Tài khoản</span></a>

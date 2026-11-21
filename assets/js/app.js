@@ -50,9 +50,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    function isWishlistForm(form) {
+        return form.classList.contains('wishlist-form') || form.classList.contains('wishlist-detail-form');
+    }
+
     document.querySelectorAll('form').forEach(function (form) {
         form.addEventListener('submit', function (event) {
-            if (event.defaultPrevented) return;
+            if (event.defaultPrevented || isWishlistForm(form)) return;
             // Tránh gửi trùng nhưng không vô hiệu hóa nút submit: nút có name/value
             // (ví dụ "Mua ngay" hoặc "Áp dụng mã") vẫn phải được gửi kèm form.
             if (form.dataset.submitting === '1') {
@@ -67,9 +71,50 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Tim yêu thích: đổi ♡/♥ ngay lập tức, không chèn chữ "Đang xử lý" vào nút tròn.
+    document.querySelectorAll('.wishlist-form, .wishlist-detail-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (event.defaultPrevented) return;
+            if (form.dataset.wishlistPending === '1') {
+                event.preventDefault();
+                return;
+            }
+
+            var cardButton = form.querySelector('.wishlist-btn');
+            var detailButton = form.querySelector('.btn-outline-danger');
+            var willBeWished = cardButton
+                ? !cardButton.classList.contains('is-active')
+                : (detailButton ? detailButton.textContent.indexOf('♥') !== 0 : false);
+
+            form.dataset.wishlistPending = '1';
+
+            if (cardButton) {
+                cardButton.classList.toggle('is-active', willBeWished);
+                cardButton.textContent = willBeWished ? '♥' : '♡';
+                var label = willBeWished ? 'Bỏ khỏi yêu thích' : 'Thêm vào yêu thích';
+                cardButton.setAttribute('aria-label', label);
+                cardButton.setAttribute('title', label);
+            }
+            if (detailButton) {
+                detailButton.textContent = willBeWished
+                    ? '♥ Đã lưu yêu thích — bỏ lưu'
+                    : '♡ Lưu vào yêu thích';
+            }
+
+            var counter = document.querySelector('.wishlist-count');
+            if (counter) {
+                var total = (parseInt(counter.textContent, 10) || 0) + (willBeWished ? 1 : -1);
+                counter.textContent = String(Math.max(0, total));
+            }
+        });
+    });
+
     window.addEventListener('pageshow', function () {
         document.querySelectorAll('form[data-submitting]').forEach(function (form) {
             delete form.dataset.submitting;
+        });
+        document.querySelectorAll('form[data-wishlist-pending]').forEach(function (form) {
+            delete form.dataset.wishlistPending;
         });
     });
 

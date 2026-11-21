@@ -144,6 +144,75 @@ if (!function_exists('url')) {
     }
 }
 
+if (!function_exists('current_path')) {
+    /**
+     * Đường dẫn hiện tại (không có BASE_URL), dùng làm đích quay lại sau khi gửi form.
+     */
+    function current_path()
+    {
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        $basePath = parse_url(BASE_URL, PHP_URL_PATH) ?: '/';
+        $basePath = rtrim($basePath, '/');
+        if ($basePath !== '' && strpos($path, $basePath) === 0) {
+            $path = substr($path, strlen($basePath));
+        }
+        $path = '/' . trim($path, '/');
+        $query = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY) ?? '');
+
+        return ltrim($path, '/') . ($query !== '' ? '?' . $query : '');
+    }
+}
+
+if (!function_exists('wishlist_ids')) {
+    /**
+     * Cache danh sách sản phẩm yêu thích của người dùng trong session.
+     */
+    function wishlist_ids()
+    {
+        $userId = (int) ($_SESSION['user']['id'] ?? 0);
+        if ($userId < 1) {
+            return [];
+        }
+        if (!array_key_exists('_wishlist_ids', $_SESSION)) {
+            try {
+                $_SESSION['_wishlist_ids'] = (new WishlistModel())->idsForUser($userId);
+            } catch (Throwable $exception) {
+                error_log($exception->getMessage());
+                $_SESSION['_wishlist_ids'] = [];
+            }
+        }
+
+        return $_SESSION['_wishlist_ids'];
+    }
+}
+
+if (!function_exists('refresh_wishlist_ids')) {
+    function refresh_wishlist_ids()
+    {
+        unset($_SESSION['_wishlist_ids']);
+    }
+}
+
+if (!function_exists('json_response')) {
+    function json_response(array $data, $status = 200)
+    {
+        http_response_code((int) $status);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+}
+
+if (!function_exists('json_request_body')) {
+    function json_request_body()
+    {
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw ?: '', true);
+
+        return is_array($data) ? $data : $_POST;
+    }
+}
+
 if (!function_exists('product_image_url')) {
     function product_image_url($coverImage)
     {
