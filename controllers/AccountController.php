@@ -14,6 +14,7 @@ class AccountController extends BaseController
         $tab = $_GET['tab'] ?? 'profile';
         $orders = [];
         $orderDetails = [];
+        $returnRequest = null;
         $selectedOrder = null;
         $requestedOrderId = !empty($_GET['order']) ? (int) $_GET['order'] : 0;
         $orderNotFound = false;
@@ -57,6 +58,17 @@ class AccountController extends BaseController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->requirePost();
             try {
+                if (($_POST['form_type'] ?? '') === 'return_request') {
+                    $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                    if (!$orderId || $orderId <= 0) {
+                        throw new DomainException('Mã đơn hàng không hợp lệ.');
+                    }
+
+                    $this->submitReturnRequest($orderId, $userId, $userEmail);
+                    flash('success', 'Đã gửi yêu cầu trả hàng. Vui lòng chờ quản trị viên phê duyệt.');
+                    redirect('account?tab=orders&order=' . (int) $orderId);
+                }
+
                 $model = new UserModel();
                 if (($_POST['form_type'] ?? '') === 'profile') {
                     $profile = [
@@ -123,65 +135,14 @@ class AccountController extends BaseController
                     }
                     redirect('account?tab=password');
                 }
-
-                if (($_POST['form_type'] ?? '') === 'review') {
-                    $orderId = (int) request_string($_POST, 'order_id');
-                    $productId = (int) request_string($_POST, 'product_id');
-                    $rating = (int) request_string($_POST, 'rating');
-                    $content = trim(request_string($_POST, 'content'));
-                    $orderModel = new OrderModel();
-                    $order = $orderModel->getForUser($userId, $userEmail);
-                    $eligible = false;
-                    $details = [];
-                    foreach ($order as $item) {
-                        if ((int) $item['id'] === $orderId && (string) $item['status'] === 'completed') {
-                            $eligible = true;
-                            break;
-                        }
-                    }
-                    if ($eligible) {
-                        $details = $orderModel->getDetailsForUser($orderId, $userId, $userEmail);
-                    }
-                    $productEligible = false;
-                    foreach ($details as $detail) {
-                        if ((int) $detail['product_id'] === $productId) {
-                            $productEligible = true;
-                            break;
-                        }
-                    }
-                    if (!$productEligible) {
-                        flash('danger', 'Chỉ có thể đánh giá sản phẩm trong đơn đã hoàn tất.');
-                    } elseif ($rating < 1 || $rating > 5) {
-                        flash('danger', 'Vui lòng chọn từ 1 đến 5 sao.');
-                    } else {
-                        (new ReviewModel())->create($productId, $userId, $rating, $content);
-                        flash('success', 'Cảm ơn bạn! Đánh giá đang chờ duyệt.');
-                    }
-                    redirect('account?tab=orders&status=review');
-                }
-
-                if (($_POST['form_type'] ?? '') === 'cancel_order') {
-                    $orderId = (int) request_string($_POST, 'order_id');
-                    $orderModel = new OrderModel();
-                    $ownedOrder = null;
-                    foreach ($orderModel->getForUser($userId, $userEmail) as $order) {
-                        if ((int) $order['id'] === $orderId) {
-                            $ownedOrder = $order;
-                            break;
-                        }
-                    }
-                    if (!$ownedOrder) {
-                        flash('danger', 'Không tìm thấy đơn hàng cần hủy.');
-                    } elseif (!in_array((string) $ownedOrder['status'], ['pending', 'confirmed'], true)) {
-                        flash('danger', 'Đơn hàng đã ở giai đoạn giao hàng hoặc đã hoàn tất, không thể hủy.');
-                    } else {
-                        $orderModel->updateStatus($orderId, 'cancelled');
-                        flash('success', 'Đã hủy đơn hàng #' . $orderId . '.');
-                    }
-                    redirect('account?tab=orders&status=cancelled');
-                }
+            } catch (DomainException $exception) {
+                flash('danger', $exception->getMessage());
+                $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                redirect($orderId ? 'account?tab=orders&order=' . (int) $orderId : 'account?tab=orders');
             } catch (PDOException | RuntimeException $exception) {
                 flash('danger', $this->reportDatabaseFailure($exception));
+                $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                redirect($orderId ? 'account?tab=orders&order=' . (int) $orderId : 'account?tab=orders');
             }
         }
 
@@ -234,6 +195,7 @@ class AccountController extends BaseController
                 }
                 if ($selectedOrder) {
                     $orderDetails = $orderModel->getDetailsForUser($requestedOrderId, $userId, $userEmail);
+                    $returnRequest = $orderModel->getReturnRequestForUser($requestedOrderId, $userId, $userEmail);
                 } else {
                     $orderNotFound = true;
                 }
@@ -246,5 +208,101 @@ class AccountController extends BaseController
         $title = 'Tài khoản của tôi';
         $view = 'account/index';
         require PATH_VIEW . 'main.php';
+    }
+
+    private function submitReturnRequest($orderId, $userId, $userEmail)
+    {
+        $reason = request_string($_POST, 'reason');
+        $description = trim(request_string($_POST, 'description'));
+        $descriptionLength = function_exists('mb_strlen')
+            ? mb_strlen($description, 'UTF-8')
+            : strlen($description);
+        if ($description === '' || $descriptionLength > 3000) {
+            throw new DomainException('Chi tiết lý do không được để trống và tối đa 3.000 ký tự.');
+        }
+
+        $storedFiles = [];
+        try {
+            $images = $_FILES['evidence_images'] ?? null;
+            if (!is_array($images) || !isset($images['name']) || !is_array($images['name']) || count($images['name']) !== 4) {
+                throw new DomainException('Vui lòng tải lên đúng 4 hình ảnh.');
+            }
+            foreach (array_keys($images['name']) as $index) {
+                $file = [];
+                foreach (['name', 'type', 'tmp_name', 'error', 'size'] as $field) {
+                    $file[$field] = $images[$field][$index] ?? null;
+                }
+                $storedFiles[] = $this->storeReturnEvidence($file, 'image');
+            }
+
+            $video = $_FILES['evidence_video'] ?? null;
+            if (!is_array($video)) {
+                throw new DomainException('Vui lòng tải lên 1 video minh chứng.');
+            }
+            $storedFiles[] = $this->storeReturnEvidence($video, 'video');
+
+            (new OrderModel())->submitReturnRequest(
+                $orderId,
+                $userId,
+                $userEmail,
+                $reason,
+                $description,
+                array_slice($storedFiles, 0, 4),
+                $storedFiles[4]
+            );
+        } catch (Throwable $exception) {
+            foreach ($storedFiles as $storedFile) {
+                delete_upload_file($storedFile);
+            }
+            throw $exception;
+        }
+    }
+
+    private function storeReturnEvidence(array $file, $type)
+    {
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error !== UPLOAD_ERR_OK) {
+            if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+                throw new DomainException('Một tệp vượt quá giới hạn tải lên của máy chủ.');
+            }
+            throw new DomainException('Vui lòng chọn đủ hình ảnh và video minh chứng hợp lệ.');
+        }
+
+        $tmpName = (string) ($file['tmp_name'] ?? '');
+        $size = (int) ($file['size'] ?? 0);
+        $maxSize = $type === 'image' ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
+        if ($tmpName === '' || !is_uploaded_file($tmpName) || $size < 1024 || $size > $maxSize) {
+            throw new DomainException($type === 'image'
+                ? 'Mỗi ảnh cần có dung lượng từ 1KB đến 5MB.'
+                : 'Video cần có dung lượng từ 1KB đến 50MB.');
+        }
+
+        if (!class_exists('finfo')) {
+            throw new DomainException('Máy chủ chưa hỗ trợ kiểm tra tệp tải lên. Vui lòng liên hệ quản trị viên.');
+        }
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmpName);
+        $extensions = $type === 'image'
+            ? ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif']
+            : ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov'];
+        if (!is_string($mime) || !isset($extensions[$mime])) {
+            throw new DomainException($type === 'image'
+                ? 'Ảnh chỉ hỗ trợ định dạng JPG, PNG, WEBP hoặc GIF.'
+                : 'Video chỉ hỗ trợ định dạng MP4, WEBM hoặc MOV.');
+        }
+        if ($type === 'image' && !@getimagesize($tmpName)) {
+            throw new DomainException('Tệp hình ảnh không hợp lệ.');
+        }
+
+        $folder = 'returns';
+        $directory = PATH_ASSETS_UPLOADS . $folder . DIRECTORY_SEPARATOR;
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            throw new DomainException('Không thể lưu minh chứng trả hàng. Vui lòng liên hệ quản trị viên.');
+        }
+        $fileName = date('YmdHis') . '-' . bin2hex(random_bytes(8)) . '.' . $extensions[$mime];
+        if (!move_uploaded_file($tmpName, $directory . $fileName)) {
+            throw new DomainException('Không thể lưu minh chứng trả hàng. Vui lòng thử lại sau.');
+        }
+
+        return $folder . '/' . $fileName;
     }
 }

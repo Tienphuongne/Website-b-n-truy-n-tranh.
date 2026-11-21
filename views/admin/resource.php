@@ -16,7 +16,9 @@ $columnLabels = [
     'role' => 'Vai trò',
     'product_id' => 'Mã sản phẩm',
     'user_id' => 'Mã người dùng',
+    'order_id' => 'Mã đơn hàng',
     'rating' => 'Điểm đánh giá',
+    'reason' => 'Lý do trả hàng',
     'code' => 'Mã giảm giá',
     'discount_type' => 'Kiểu giảm giá',
     'discount_value' => 'Giá trị giảm',
@@ -41,6 +43,16 @@ $valueLabels = [
             'shipping' => 'Đang giao',
             'completed' => 'Hoàn tất',
             'cancelled' => 'Đã hủy',
+        ],
+    ],
+    'returns' => [
+        'status' => ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Đã từ chối'],
+        'reason' => [
+            'defective' => 'Hàng bị lỗi',
+            'damaged' => 'Hàng bị hỏng',
+            'wrong_item' => 'Giao sai hàng',
+            'missing_item' => 'Thiếu sản phẩm',
+            'other' => 'Lý do khác',
         ],
     ],
     'contacts' => [

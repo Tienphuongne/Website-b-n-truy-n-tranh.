@@ -53,19 +53,27 @@ class AdminController extends BaseController
             }
 
             if ($task === 'detail') {
-                $detail = $id ? $model->getOrderDetail($id) : null;
+                $detail = $id
+                    ? ($key === 'returns'
+                        ? (new OrderModel())->getReturnRequestDetail($id)
+                        : $model->getOrderDetail($id))
+                    : null;
                 if (!$detail) {
                     http_response_code(404);
-                    $databaseError = 'Không tìm thấy đơn hàng cần xem.';
-                    $title = 'Không tìm thấy đơn hàng';
+                    $databaseError = $key === 'returns'
+                        ? 'Không tìm thấy yêu cầu trả hàng cần xem.'
+                        : 'Không tìm thấy đơn hàng cần xem.';
+                    $title = $key === 'returns' ? 'Không tìm thấy yêu cầu' : 'Không tìm thấy đơn hàng';
                     $view = 'admin/resource';
-                    $resource = ['title' => 'Đơn hàng', 'rows' => []];
+                    $resource = ['title' => $key === 'returns' ? 'Yêu cầu trả hàng' : 'Đơn hàng', 'rows' => []];
                     require PATH_VIEW . 'admin.php';
                     return;
                 }
 
-                $title = 'Chi tiết đơn hàng #' . (int) $id;
-                $view = 'admin/order-detail';
+                $title = $key === 'returns'
+                    ? 'Yêu cầu trả hàng #' . (int) $id
+                    : 'Chi tiết đơn hàng #' . (int) $id;
+                $view = $key === 'returns' ? 'admin/return-detail' : 'admin/order-detail';
                 require PATH_VIEW . 'admin.php';
                 return;
             }
@@ -163,6 +171,27 @@ class AdminController extends BaseController
         $title = $resource['title'] ?? ($definition['title'] ?? 'Quản lý dữ liệu');
         $view = 'admin/resource';
         require PATH_VIEW . 'admin.php';
+    }
+
+    public function reviewReturnRequest()
+    {
+        $this->requireAdmin();
+        $this->requirePost();
+        $requestId = filter_var($_POST['request_id'] ?? null, FILTER_VALIDATE_INT);
+        if (!$requestId || $requestId <= 0) {
+            flash('danger', 'Mã yêu cầu trả hàng không hợp lệ.');
+            redirect('admin/returns');
+        }
+
+        try {
+            (new OrderModel())->reviewReturnRequest($requestId, request_string($_POST, 'status'));
+            flash('success', 'Đã cập nhật quyết định cho yêu cầu trả hàng.');
+        } catch (DomainException $exception) {
+            flash('danger', $exception->getMessage());
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+        }
+        redirect('admin/returns/detail?id=' . (int) $requestId);
     }
 
     private function reportDate($value, $fallback)
