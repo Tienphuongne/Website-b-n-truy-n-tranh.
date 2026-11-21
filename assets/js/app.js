@@ -92,6 +92,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    document.querySelectorAll('.product-card').forEach(function (card) {
+        card.addEventListener('click', function (event) {
+            if (event.button !== 0 || event.target.closest('a, button, input, select, textarea, label')) return;
+
+            var link = card.querySelector('.product-card-link');
+            if (link) window.location.assign(link.href);
+        });
+    });
+
     document.querySelectorAll('[data-cart-quantity]').forEach(function (input) {
         input.addEventListener('change', function () {
             if (!input.form) return;
