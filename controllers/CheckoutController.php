@@ -37,9 +37,13 @@ class CheckoutController extends BaseController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->requirePost();
             if (isset($_POST['apply_coupon'])) {
+                $isAjax = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
                 try {
                     $cartItems = $this->loadCart();
                     if (!$cartItems) {
+                        if ($isAjax) {
+                            $this->respondJson(['success' => false, 'message' => 'Giỏ hàng đang trống, chưa thể áp dụng mã giảm giá.'], 422);
+                        }
                         flash('warning', 'Giỏ hàng đang trống, chưa thể áp dụng mã giảm giá.');
                         redirect('cart');
                     }
@@ -52,16 +56,43 @@ class CheckoutController extends BaseController
                     );
                     if (!$coupon) {
                         unset($_SESSION['coupon']);
+                        if ($isAjax) {
+                            $this->respondJson([
+                                'success' => false,
+                                'message' => 'Mã giảm giá không hợp lệ hoặc đơn hàng chưa đạt giá trị tối thiểu.',
+                                'discount' => 0,
+                                'total' => $subtotal + $this->shippingFee,
+                            ], 422);
+                        }
                         flash('warning', 'Mã giảm giá không hợp lệ hoặc đơn hàng chưa đạt giá trị tối thiểu.');
                     } else {
                         $_SESSION['coupon'] = $coupon['code'];
+                        if ($isAjax) {
+                            $discount = (new CouponModel())->discount($coupon, $subtotal);
+                            $this->respondJson([
+                                'success' => true,
+                                'message' => 'Đã áp dụng mã giảm giá.',
+                                'coupon_code' => $coupon['code'],
+                                'discount' => $discount,
+                                'total' => $subtotal + $this->shippingFee - $discount,
+                            ]);
+                        }
                         flash('success', 'Đã áp dụng mã giảm giá.');
                     }
                     redirect('checkout');
                 } catch (DomainException $exception) {
+                    if ($isAjax) {
+                        $this->respondJson(['success' => false, 'message' => $exception->getMessage()], 422);
+                    }
                     flash('warning', $exception->getMessage());
                     redirect('cart');
                 } catch (PDOException | RuntimeException $exception) {
+                    if ($isAjax) {
+                        $this->respondJson([
+                            'success' => false,
+                            'message' => $this->reportDatabaseFailure($exception),
+                        ], 500);
+                    }
                     flash('danger', $this->reportDatabaseFailure($exception));
                     redirect('checkout');
                 }
@@ -146,6 +177,14 @@ class CheckoutController extends BaseController
         $title = 'Thanh toán';
         $view = 'checkout/index';
         require PATH_VIEW . 'main.php';
+    }
+
+    private function respondJson(array $data, $status = 200)
+    {
+        http_response_code((int) $status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
     }
 
     private function loadCart()

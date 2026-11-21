@@ -254,7 +254,7 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .payment-option small { color: #92939a; font-size: 10px; margin-top: 3px; line-height: 1.4; }
 .checkout-product { border-bottom: 1px solid #f0efed; display: flex; font-size: 10px; gap: 12px; justify-content: space-between; padding: 9px 0; }
 .checkout-product span { max-width: 195px; }.checkout-product small { color: #92939a; }.checkout-product strong { white-space: nowrap; }
-.coupon-entry { margin: 17px 0; }.coupon-input-row { display: flex; gap: 7px; }.coupon-input-row .btn { flex: 0 0 auto; font-size: 10px; padding: 8px 11px; }.coupon-applied { color: #368b68; display: block; font-size: 10px; margin-top: 5px; }
+.coupon-entry { margin: 17px 0; }.coupon-input-row { display: flex; gap: 7px; }.coupon-input-row .btn { flex: 0 0 auto; font-size: 10px; padding: 8px 11px; }.coupon-applied { color: #368b68; display: block; font-size: 10px; margin-top: 5px; }.coupon-applied[hidden], .coupon-error[hidden], [data-checkout-discount-row][hidden] { display: none !important; }.coupon-error:not([hidden]) { color: #c7352b; display: block; font-size: 10px; margin-top: 5px; }
 .order-success { background: #fbfaf9; border-radius: 18px; margin: 20px auto; max-width: 670px; padding: 54px 25px; text-align: center; }
 .success-mark { align-items: center; background: #e1f4e9; border-radius: 50%; color: #399167; display: flex; font-size: 25px; height: 58px; justify-content: center; margin: 0 auto 20px; width: 58px; }
 .order-success h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
