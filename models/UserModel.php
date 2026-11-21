@@ -38,9 +38,47 @@ class UserModel extends BaseModel
     public function findById($id)
     {
         return $this->execute(
-            'SELECT id, full_name, username, email, phone, role FROM users WHERE id = :id LIMIT 1',
+            'SELECT id, full_name, username, email, phone, birth_date, city, district, address, role FROM users WHERE id = :id LIMIT 1',
             ['id' => (int) $id]
         )->fetch();
+    }
+
+    public function ensureProfileColumns()
+    {
+        $columns = $this->execute(
+            "SELECT COLUMN_NAME
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
+               AND COLUMN_NAME IN ('birth_year', 'birth_date', 'city', 'district', 'address')"
+        )->fetchAll(PDO::FETCH_COLUMN);
+
+        $existing = array_fill_keys(array_map('strval', $columns), true);
+        if (!isset($existing['birth_date'])) {
+            $this->execute('ALTER TABLE users ADD COLUMN birth_date DATE NULL AFTER phone');
+            $existing['birth_date'] = true;
+            if (isset($existing['birth_year'])) {
+                $this->execute("UPDATE users
+                                SET birth_date = STR_TO_DATE(CONCAT(birth_year, '-01-01'), '%Y-%m-%d')
+                                WHERE birth_year IS NOT NULL");
+            }
+        }
+        if (!isset($existing['address'])) {
+            $this->execute('ALTER TABLE users ADD COLUMN address VARCHAR(500) NULL AFTER birth_date');
+        }
+        if (!isset($existing['city'])) {
+            $this->execute('ALTER TABLE users ADD COLUMN city VARCHAR(150) NULL AFTER birth_date');
+        }
+        if (!isset($existing['district'])) {
+            $this->execute('ALTER TABLE users ADD COLUMN district VARCHAR(150) NULL AFTER city');
+        }
+    }
+
+    public function emailExistsForOther($email, $id)
+    {
+        return (bool) $this->execute(
+            'SELECT 1 FROM users WHERE email = :email AND id <> :id LIMIT 1',
+            ['email' => $email, 'id' => (int) $id]
+        )->fetchColumn();
     }
 
     public function findByRememberToken($tokenHash)
@@ -79,10 +117,17 @@ class UserModel extends BaseModel
     public function updateProfile($id, array $profile)
     {
         $this->execute(
-            'UPDATE users SET full_name = :full_name, phone = :phone WHERE id = :id',
+            'UPDATE users SET full_name = :full_name, birth_date = :birth_date,
+             phone = :phone, email = :email, city = :city, district = :district,
+             address = :address WHERE id = :id',
             [
                 'full_name' => $profile['full_name'],
                 'phone' => $profile['phone'],
+                'birth_date' => $profile['birth_date'],
+                'email' => $profile['email'],
+                'city' => $profile['city'],
+                'district' => $profile['district'],
+                'address' => $profile['address'],
                 'id' => (int) $id,
             ]
         );

@@ -56,7 +56,28 @@ class CartController extends BaseController
         );
         $_SESSION['cart'] = $cart;
         flash('success', 'Đã thêm truyện vào giỏ hàng.');
-        redirect(isset($_POST['buy_now']) ? 'checkout' : 'cart');
+        if (isset($_POST['buy_now'])) {
+            redirect('checkout');
+        }
+
+        $returnUrl = trim(request_string($_POST, 'return_url'));
+        if (
+            $returnUrl !== ''
+            && str_starts_with($returnUrl, '/')
+            && !str_starts_with($returnUrl, '//')
+        ) {
+            header('Location: ' . $returnUrl);
+            exit;
+        }
+
+        $referer = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($referer !== '' && $host !== '' && preg_match('#^https?://' . preg_quote($host, '#') . '(?:/|$)#i', $referer)) {
+            header('Location: ' . $referer);
+            exit;
+        }
+
+        redirect($_SERVER['REQUEST_URI'] ?? 'products');
     }
 
     public function update()

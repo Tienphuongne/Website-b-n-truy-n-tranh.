@@ -34,6 +34,7 @@
             <?= csrf_field() ?>
             <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
             <input type="hidden" name="quantity" value="1">
+            <input type="hidden" name="return_url" value="<?= e($_SERVER['REQUEST_URI'] ?? '/products') ?>">
             <button class="btn btn-add-cart w-100" type="submit" <?= $isOutOfStock ? 'disabled' : '' ?>>
                 <?= $isOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ' ?>
             </button>
