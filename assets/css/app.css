@@ -299,6 +299,13 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .admin-report-bar { align-items: center; display: flex; flex: 1; flex-direction: column; gap: 4px; height: 100%; justify-content: flex-end; }
 .admin-report-bar span { background: linear-gradient(180deg, #f57a55, var(--accent)); border-radius: 4px 4px 0 0; display: block; min-height: 3px; width: 100%; }
 .admin-report-bar small { color: #9a9ba0; font-size: 8px; }
+.return-request-box, .admin-return-description, .admin-return-evidence { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; margin: 20px 0; padding: 18px; }
+.return-request-box h3, .admin-return-description h3, .admin-return-evidence h3 { font-size: 15px; font-weight: 700; }
+.return-evidence-video { display: block; margin-top: 12px; max-width: 100%; width: 420px; }
+.admin-return-images { align-items: flex-start; display: flex; flex-wrap: wrap; gap: 12px; }
+.admin-return-images img { border: 1px solid var(--line); border-radius: 8px; height: 150px; object-fit: cover; width: 150px; }
+.admin-return-images video { max-width: 100%; width: 420px; }
+.admin-return-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 @media (min-width: 992px) and (max-width: 1199px) {
     .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

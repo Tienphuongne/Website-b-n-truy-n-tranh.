@@ -64,6 +64,14 @@ class AdminModel extends BaseModel
             'table' => 'orders', 'create' => false, 'edit' => true, 'delete' => false, 'detail' => true,
             'fields' => [['name' => 'status', 'label' => 'Trạng thái đơn hàng', 'type' => 'select', 'options' => ['pending' => 'Chờ xác nhận', 'confirmed' => 'Đã xác nhận', 'shipping' => 'Đang giao', 'completed' => 'Hoàn tất', 'cancelled' => 'Đã hủy']]],
         ],
+        'returns' => [
+            'title' => 'Yêu cầu trả hàng',
+            'query' => 'SELECT rr.id, rr.order_id, o.customer_name, rr.reason, rr.status, rr.created_at
+                        FROM return_requests rr
+                        INNER JOIN orders o ON o.id = rr.order_id
+                        ORDER BY rr.created_at DESC LIMIT 100',
+            'create' => false, 'edit' => false, 'delete' => false, 'detail' => true,
+        ],
         'contacts' => [
             'title' => 'Liên hệ', 'query' => 'SELECT id, full_name, email, phone, message, status, created_at FROM contacts ORDER BY created_at DESC LIMIT 100',
             'table' => 'contacts', 'create' => false, 'edit' => true, 'delete' => true,

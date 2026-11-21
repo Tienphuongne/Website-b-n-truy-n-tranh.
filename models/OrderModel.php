@@ -2,6 +2,17 @@
 
 class OrderModel extends BaseModel
 {
+    public static function returnReasons()
+    {
+        return [
+            'defective' => 'Hàng bị lỗi',
+            'damaged' => 'Hàng bị hỏng',
+            'wrong_item' => 'Giao sai hàng',
+            'missing_item' => 'Thiếu sản phẩm',
+            'other' => 'Lý do khác',
+        ];
+    }
+
     public function createOrder(array $customer, array $cart, $paymentMethod, $shippingFee, $userId = null, $couponId = null)
     {
         $this->pdo->beginTransaction();
@@ -308,5 +319,177 @@ class OrderModel extends BaseModel
                 'email' => (string) $email,
             ]
         )->fetchAll();
+    }
+
+    public function getReturnRequestForUser($orderId, $userId, $email = '')
+    {
+        $request = $this->execute(
+            "SELECT rr.id, rr.reason, rr.description, rr.status, rr.created_at, rr.reviewed_at
+             FROM return_requests rr
+             INNER JOIN orders o ON o.id = rr.order_id
+             WHERE o.id = :order_id
+               AND (o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email))
+             ORDER BY rr.id DESC
+             LIMIT 1",
+            [
+                'order_id' => (int) $orderId,
+                'user_id' => (int) $userId,
+                'email' => (string) $email,
+            ]
+        )->fetch();
+
+        if (!$request) {
+            return null;
+        }
+
+        $request['media'] = $this->execute(
+            'SELECT media_type, file_path FROM return_request_media
+             WHERE request_id = :request_id ORDER BY id',
+            ['request_id' => (int) $request['id']]
+        )->fetchAll();
+
+        return $request;
+    }
+
+    public function submitReturnRequest($orderId, $userId, $email, $reason, $description, array $images, $video)
+    {
+        if (!array_key_exists($reason, self::returnReasons())) {
+            throw new DomainException('Vui lòng chọn lý do trả hàng hợp lệ.');
+        }
+        if (trim($description) === '' || count($images) !== 4 || !is_string($video) || $video === '') {
+            throw new DomainException('Vui lòng nhập chi tiết và gửi đủ 4 ảnh cùng 1 video.');
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $order = $this->execute(
+                'SELECT id, status FROM orders
+                 WHERE id = :order_id
+                   AND (user_id = :user_id OR (user_id IS NULL AND email = :email))
+                 FOR UPDATE',
+                [
+                    'order_id' => (int) $orderId,
+                    'user_id' => (int) $userId,
+                    'email' => (string) $email,
+                ]
+            )->fetch();
+            if (!$order || $order['status'] !== 'completed') {
+                throw new DomainException('Chỉ có thể yêu cầu trả hàng cho đơn đã giao thành công.');
+            }
+
+            $activeRequest = $this->execute(
+                "SELECT id FROM return_requests
+                 WHERE order_id = :order_id AND status IN ('pending', 'approved')
+                 LIMIT 1 FOR UPDATE",
+                ['order_id' => (int) $orderId]
+            )->fetch();
+            if ($activeRequest) {
+                throw new DomainException('Đơn hàng này đã có yêu cầu trả hàng đang chờ hoặc đã được duyệt.');
+            }
+
+            $this->execute(
+                'INSERT INTO return_requests (order_id, reason, description, status, created_at)
+                 VALUES (:order_id, :reason, :description, \'pending\', NOW())',
+                [
+                    'order_id' => (int) $orderId,
+                    'reason' => $reason,
+                    'description' => trim($description),
+                ]
+            );
+            $requestId = (int) $this->pdo->lastInsertId();
+            $media = $this->pdo->prepare(
+                'INSERT INTO return_request_media (request_id, media_type, file_path)
+                 VALUES (:request_id, :media_type, :file_path)'
+            );
+            foreach ($images as $image) {
+                $media->execute([
+                    'request_id' => $requestId,
+                    'media_type' => 'image',
+                    'file_path' => $image,
+                ]);
+            }
+            $media->execute([
+                'request_id' => $requestId,
+                'media_type' => 'video',
+                'file_path' => $video,
+            ]);
+
+            $this->pdo->commit();
+
+            return $requestId;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function getReturnRequestDetail($requestId)
+    {
+        $request = $this->execute(
+            'SELECT rr.*, o.customer_name, o.phone, o.email, o.status AS order_status,
+                    o.total_amount, o.payment_method, o.id AS order_id
+             FROM return_requests rr
+             INNER JOIN orders o ON o.id = rr.order_id
+             WHERE rr.id = :id LIMIT 1',
+            ['id' => (int) $requestId]
+        )->fetch();
+        if (!$request) {
+            return null;
+        }
+
+        $request['media'] = $this->execute(
+            'SELECT media_type, file_path FROM return_request_media
+             WHERE request_id = :request_id ORDER BY id',
+            ['request_id' => (int) $requestId]
+        )->fetchAll();
+        $request['items'] = $this->execute(
+            'SELECT product_name, unit_price, quantity FROM order_details
+             WHERE order_id = :order_id ORDER BY id',
+            ['order_id' => (int) $request['order_id']]
+        )->fetchAll();
+
+        return $request;
+    }
+
+    public function reviewReturnRequest($requestId, $status)
+    {
+        if (!in_array($status, ['approved', 'rejected'], true)) {
+            throw new DomainException('Trạng thái duyệt yêu cầu không hợp lệ.');
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $request = $this->execute(
+                'SELECT id, order_id, status FROM return_requests WHERE id = :id FOR UPDATE',
+                ['id' => (int) $requestId]
+            )->fetch();
+            if (!$request) {
+                throw new DomainException('Không tìm thấy yêu cầu trả hàng.');
+            }
+            if ($request['status'] !== 'pending') {
+                throw new DomainException('Yêu cầu này đã được xử lý trước đó.');
+            }
+
+            $this->execute(
+                'UPDATE return_requests SET status = :status, reviewed_at = NOW() WHERE id = :id',
+                ['status' => $status, 'id' => (int) $requestId]
+            );
+            if ($status === 'approved') {
+                $this->execute(
+                    "UPDATE payments SET status = 'refunded'
+                     WHERE order_id = :order_id AND status = 'paid'",
+                    ['order_id' => (int) $request['order_id']]
+                );
+            }
+
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
     }
 }

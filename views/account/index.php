@@ -136,6 +136,53 @@
                                 <div><span>Phí vận chuyển</span><strong><?= number_format((float) $selectedOrder['shipping_fee'], 0, ',', '.') ?>₫</strong></div>
                                 <div class="is-total"><span>Tổng thanh toán</span><strong><?= number_format((float) $selectedOrder['total_amount'], 0, ',', '.') ?>₫</strong></div>
                             </div>
+                            <?php if ($returnRequest): ?>
+                                <?php
+                                $returnStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã duyệt hoàn tiền', 'rejected' => 'Không được phê duyệt'];
+                                $returnReasons = OrderModel::returnReasons();
+                                ?>
+                                <div class="account-alert">
+                                    <strong>Yêu cầu trả hàng: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
+                                    <p class="mb-1">Lý do: <?= e($returnReasons[$returnRequest['reason']] ?? $returnRequest['reason']) ?></p>
+                                    <p><?= nl2br(e($returnRequest['description'])) ?></p>
+                                    <?php foreach ($returnRequest['media'] as $media): ?>
+                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
+                                        <?php if ($media['media_type'] === 'image'): ?>
+                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener">Xem ảnh minh chứng</a>
+                                        <?php else: ?>
+                                            <video class="return-evidence-video" controls preload="metadata">
+                                                <source src="<?= e($mediaUrl) ?>">
+                                                Trình duyệt không hỗ trợ phát video.
+                                            </video>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($detailStatus === 'completed' && (!$returnRequest || $returnRequest['status'] === 'rejected')): ?>
+                                <div class="return-request-box">
+                                    <h3>Yêu cầu trả hàng và hoàn tiền</h3>
+                                    <p>Chỉ áp dụng cho đơn đã giao thành công. Gửi đủ 4 ảnh và 1 video để quản trị viên xem xét.</p>
+                                    <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&order=' . (int) $selectedOrder['id'])) ?>">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="form_type" value="return_request">
+                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                        <label class="form-label" for="return-reason">Lý do trả hàng</label>
+                                        <select class="form-select mb-3" id="return-reason" name="reason" required>
+                                            <option value="">Chọn lý do</option>
+                                            <?php foreach (OrderModel::returnReasons() as $reason => $label): ?>
+                                                <option value="<?= e($reason) ?>"><?= e($label) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <label class="form-label" for="return-description">Chi tiết lý do</label>
+                                        <textarea class="form-control mb-3" id="return-description" name="description" rows="4" maxlength="3000" required></textarea>
+                                        <label class="form-label" for="return-images">4 hình ảnh hàng hóa/đơn hàng (JPG, PNG, WEBP, GIF; tối đa 5MB mỗi ảnh)</label>
+                                        <input class="form-control mb-3" id="return-images" name="evidence_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
+                                        <label class="form-label" for="return-video">1 video minh chứng (MP4, WEBM, MOV; tối đa 50MB)</label>
+                                        <input class="form-control mb-3" id="return-video" name="evidence_video" type="file" accept="video/mp4,video/webm,video/quicktime" required>
+                                        <button class="btn btn-primary" type="submit">Gửi yêu cầu phê duyệt</button>
+                                    </form>
+                                </div>
+                            <?php endif; ?>
                             <a class="text-link" href="<?= e(url('account?tab=orders')) ?>">← Ẩn chi tiết</a>
                         </div>
                     <?php endif; ?>
