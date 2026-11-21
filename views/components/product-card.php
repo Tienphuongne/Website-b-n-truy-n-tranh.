@@ -30,7 +30,7 @@
                 <del><?= number_format((float) $product['original_price'], 0, ',', '.') ?>₫</del>
             <?php endif; ?>
         </div>
-        <form action="<?= e(url('cart/add')) ?>" method="post">
+        <form action="<?= e(url('cart/add')) ?>" method="post" data-cart-add-form>
             <?= csrf_field() ?>
             <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
             <input type="hidden" name="quantity" value="1">
