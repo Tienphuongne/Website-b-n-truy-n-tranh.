@@ -2,7 +2,7 @@
 $heroSeries = [
     ['match' => 'Jujutsu Kaisen', 'image' => 'jujutsu-kaisen.jpg'],
     ['match' => 'Kimetsu no Yaiba', 'image' => 'kimetsu-no-yaiba.jpg'],
-    ['match' => 'Naruto', 'image' => 'naruto.webp'],
+    ['match' => 'Naruto', 'image' => 'naruto.jpg'],
     ['match' => 'One Piece', 'image' => 'one-piece.jpg'],
 ];
 $heroProducts = [];
@@ -40,7 +40,7 @@ if (!empty($discounted)) {
 $lovedFallback = !empty($bestSellers) ? $bestSellers : $featured;
 $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lovedFallback, 0, 3);
 ?>
-<section class="hero-section hero-carousel" data-hero-carousel data-interval="3000" aria-roledescription="carousel" aria-label="Truyện nổi bật của tuần">
+<section class="hero-section hero-carousel" data-hero-carousel data-interval="5000" aria-roledescription="carousel" aria-label="Truyện nổi bật của tuần">
     <div class="hero-content">
         <?php if (!empty($heroSlides)): ?>
             <div class="hero-slides">
@@ -89,19 +89,6 @@ $lovedTop = !empty($mostLoved) ? array_slice($mostLoved, 0, 3) : array_slice($lo
                     </article>
                 <?php endforeach; ?>
             </div>
-            <?php if (count($heroSlides) > 1): ?>
-                <div class="hero-controls container">
-                    <button class="hero-arrow" type="button" data-hero-prev aria-label="Truyện trước"><span aria-hidden="true">←</span></button>
-                    <div class="hero-dots">
-                        <?php foreach ($heroSlides as $slideIndex => $slide): ?>
-                            <button class="hero-dot<?= $slideIndex === 0 ? ' is-active' : '' ?>" type="button" data-hero-dot="<?= $slideIndex ?>" aria-label="Xem truyện <?= $slideIndex + 1 ?>: <?= e($slide['name']) ?>"<?= $slideIndex === 0 ? ' aria-current="true"' : '' ?>></button>
-                        <?php endforeach; ?>
-                    </div>
-                    <button class="hero-arrow" type="button" data-hero-next aria-label="Truyện tiếp theo"><span aria-hidden="true">→</span></button>
-                    <span class="hero-count"><span data-hero-count>01 / <?= str_pad((string) count($heroSlides), 2, '0', STR_PAD_LEFT) ?></span></span>
-                </div>
-                <div class="hero-progress" aria-hidden="true"><span></span></div>
-            <?php endif; ?>
         <?php else: ?>
             <div class="hero-copy container">
                 <span class="eyebrow">MỞ TRANG SÁCH, MỞ THẾ GIỚI</span>

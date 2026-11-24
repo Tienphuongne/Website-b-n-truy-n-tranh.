@@ -4,3 +4,5 @@
 !.htaccess
 !covers/
 !covers/*.svg
+!products/
+!products/*.png
