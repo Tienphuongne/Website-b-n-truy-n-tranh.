@@ -73,6 +73,8 @@ class CheckoutController extends BaseController
                         redirect('cart');
                     }
                     $subtotal = $this->subtotal($cartItems);
+                    $shippingMethod = (string) ($_POST['shipping_method'] ?? 'standard');
+                    $shippingFee = $this->shippingFees[$shippingMethod] ?? $this->shippingFees['standard'];
                     $coupon = (new CouponModel())->findValidByCode(
                         request_string($_POST, 'coupon'),
                         $subtotal,
@@ -86,7 +88,7 @@ class CheckoutController extends BaseController
                                 'success' => false,
                                 'message' => 'Mã giảm giá không hợp lệ hoặc đơn hàng chưa đạt giá trị tối thiểu.',
                                 'discount' => 0,
-                                'total' => $subtotal + $this->shippingFee,
+                                'total' => $subtotal + $shippingFee,
                             ], 422);
                         }
                         flash('warning', 'Mã giảm giá không hợp lệ hoặc đơn hàng chưa đạt giá trị tối thiểu.');
@@ -99,7 +101,7 @@ class CheckoutController extends BaseController
                                 'message' => 'Đã áp dụng mã giảm giá.',
                                 'coupon_code' => $coupon['code'],
                                 'discount' => $discount,
-                                'total' => $subtotal + $this->shippingFee - $discount,
+                                'total' => $subtotal + $shippingFee - $discount,
                             ]);
                         }
                         flash('success', 'Đã áp dụng mã giảm giá.');
