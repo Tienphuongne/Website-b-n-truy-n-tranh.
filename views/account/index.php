@@ -301,6 +301,22 @@
                 <div class="account-section-head">
                     <div><h2>Thông báo đơn hàng</h2><p>Cập nhật mới nhất về trạng thái đơn hàng của bạn.</p></div>
                 </div>
+                <?php if (!empty($activeNotifications)): ?>
+                    <div class="account-banner-list">
+                        <?php foreach ($activeNotifications as $notification): ?>
+                            <?php $bannerUrl = !empty($notification['link_url']) ? (string) $notification['link_url'] : ''; ?>
+                            <?php if ($bannerUrl): ?><a class="account-banner" href="<?= e($bannerUrl) ?>"><?php else: ?><article class="account-banner"><?php endif; ?>
+                                <?php if (!empty($notification['image_path'])): ?>
+                                    <img src="<?= e(BASE_ASSETS_UPLOADS . ltrim((string) $notification['image_path'], '/\\')) ?>" alt="<?= e($notification['title']) ?>">
+                                <?php endif; ?>
+                                <div>
+                                    <strong><?= e($notification['title']) ?></strong>
+                                    <?php if (!empty($notification['message'])): ?><p><?= e($notification['message']) ?></p><?php endif; ?>
+                                </div>
+                            <?php if ($bannerUrl): ?></a><?php else: ?></article><?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
                 <?php
                 $notificationLabels = [
                     'pending' => 'Đơn hàng đang chờ xác nhận',

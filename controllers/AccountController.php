@@ -23,6 +23,7 @@ class AccountController extends BaseController
         $wishlistProducts = [];
         $addresses = [];
         $editingAddress = null;
+        $activeNotifications = [];
         $databaseError = null;
         $orderStatusFilter = (string) ($_GET['status'] ?? 'pending');
 
@@ -215,6 +216,7 @@ class AccountController extends BaseController
             $allOrders = $orderModel->getForUser($userId, $userEmail);
             $orders = $allOrders;
             $voucherSummary = (new CouponModel())->getAvailabilityForUser($userId, $userEmail);
+            $activeNotifications = (new NotificationModel())->listActive();
             $wishlistProducts = (new WishlistModel())->listForUser($userId);
             $addresses = (new AddressModel())->listForUser($userId);
 

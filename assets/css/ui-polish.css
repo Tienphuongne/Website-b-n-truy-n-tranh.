@@ -151,6 +151,23 @@ a { transition: color .15s ease; }
     min-width: 18px;
     padding: 0 5px;
 }
+.notification-link { position: relative; }
+.notification-count {
+    align-items: center;
+    background: var(--accent);
+    border: 2px solid #fff;
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    font-size: 8px;
+    height: 18px;
+    justify-content: center;
+    min-width: 18px;
+    padding: 0 4px;
+    position: absolute;
+    right: -10px;
+    top: -9px;
+}
 
 /* Detail page save control */
 .wishlist-detail-form { margin-top: 12px; }
@@ -543,6 +560,11 @@ a { transition: color .15s ease; }
 .status-cancelled { background: #f4e8e8; color: #a34d4d; }
 .account-alert { background: #fff7f1; border: 1px solid #f6dcca; border-radius: 9px; color: #9a5a36; font-size: 11px; margin-top: 14px; padding: 10px 13px; }
 .account-notification-list, .account-promotion-list { display: flex; flex-direction: column; gap: 9px; }
+.account-banner-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.account-banner { align-items: center; border: 1px solid #f0dfd4; border-radius: 11px; display: grid; gap: 12px; grid-template-columns: 130px 1fr; overflow: hidden; padding: 8px; text-decoration: none; }
+.account-banner img { border-radius: 8px; height: 72px; object-fit: cover; width: 130px; }
+.account-banner strong { color: #34363b; display: block; font-size: 12px; }
+.account-banner p { color: var(--muted); font-size: 10px; margin: 4px 0 0; }
 .account-notification-item { align-items: center; border: 1px solid #eee7e2; border-radius: 10px; display: grid; gap: 11px; grid-template-columns: 9px 1fr auto; padding: 12px 14px; }
 .account-notification-item strong { display: block; font-size: 12px; }
 .account-notification-item p { color: var(--muted); font-size: 9px; margin: 3px 0 0; }
