@@ -580,6 +580,13 @@ a { transition: color .15s ease; }
 .account-review-item small { color: #92939a; font-size: 9px; }
 .review-stars { color: #f4b400; letter-spacing: 1px; }
 .account-review-form .form-select, .account-review-form .form-control { font-size: 11px; }
+.rating-choice { border: 0; margin-left: 0; min-width: 0; padding: 0; }
+.rating-choice legend { float: none; margin-bottom: 6px; }
+.rating-stars-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; width: max-content; }
+.rating-input-radio { clip: rect(0, 0, 0, 0); height: 1px; margin: -1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
+.rating-stars-input label { color: #c6c6c6; cursor: pointer; font-size: 30px; line-height: 1; padding: 0 3px; }
+.rating-stars-input input:checked + label, .rating-stars-input input:checked ~ label, .rating-stars-input label:hover, .rating-stars-input label:hover ~ label { color: #efa931; }
+.rating-stars-input input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 3px; }
 .order-detail-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 7px; }
 .order-detail-actions form { margin: 0; }
 .profile-form-actions { display: flex; gap: 8px; margin-top: 16px; }

@@ -245,13 +245,15 @@
                                                         <input type="hidden" name="form_type" value="review">
                                                         <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
                                                         <input type="hidden" name="product_id" value="<?= (int) $detail['product_id'] ?>">
-                                                        <label class="form-label" for="rating-<?= (int) $detail['product_id'] ?>">Số sao</label>
-                                                        <select class="form-select mb-2" id="rating-<?= (int) $detail['product_id'] ?>" name="rating" required>
-                                                            <option value="">Chọn đánh giá</option>
-                                                            <?php for ($star = 5; $star >= 1; $star--): ?>
-                                                                <option value="<?= $star ?>"><?= $star ?> sao</option>
-                                                            <?php endfor; ?>
-                                                        </select>
+                                                        <fieldset class="rating-choice mb-2">
+                                                            <legend class="form-label">Chọn số sao</legend>
+                                                            <div class="rating-stars-input" role="radiogroup" aria-label="Chọn số sao đánh giá">
+                                                                <?php for ($star = 5; $star >= 1; $star--): ?>
+                                                                    <input class="rating-input-radio" id="rating-<?= (int) $detail['product_id'] ?>-<?= $star ?>" name="rating" type="radio" value="<?= $star ?>" aria-label="<?= $star ?> sao" required>
+                                                                    <label for="rating-<?= (int) $detail['product_id'] ?>-<?= $star ?>" title="<?= $star ?> sao" aria-label="<?= $star ?> sao">★</label>
+                                                                <?php endfor; ?>
+                                                            </div>
+                                                        </fieldset>
                                                         <label class="form-label" for="review-<?= (int) $detail['product_id'] ?>">Nhận xét</label>
                                                         <textarea class="form-control mb-2" id="review-<?= (int) $detail['product_id'] ?>" name="content" rows="3" maxlength="3000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea>
                                                         <label class="form-label" for="review-images-<?= (int) $detail['product_id'] ?>">Hình ảnh (tối đa 4 ảnh, 5MB mỗi ảnh)</label>
