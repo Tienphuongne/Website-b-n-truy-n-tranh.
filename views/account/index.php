@@ -124,6 +124,10 @@
                                 <div><h3>Chi tiết đơn #<?= (int) $selectedOrder['id'] ?></h3><p>Đặt lúc <?= e($formatOrderDate($selectedOrder['created_at'])) ?></p></div>
                                 <div class="order-detail-actions">
                                     <span class="order-status-badge status-<?= e($detailStatus) ?>"><?= e($statusLabels[$detailStatus] ?? $detailStatus) ?></span>
+                                    <?php if ($detailStatus === 'completed'): ?>
+                                        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#order-review-<?= (int) $selectedOrder['id'] ?>" aria-expanded="false" aria-controls="order-review-<?= (int) $selectedOrder['id'] ?>">Đánh giá</button>
+                                        <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#order-return-<?= (int) $selectedOrder['id'] ?>" aria-expanded="false" aria-controls="order-return-<?= (int) $selectedOrder['id'] ?>">Yêu cầu hoàn hàng</button>
+                                    <?php endif; ?>
                                     <?php if (in_array($detailStatus, ['pending', 'confirmed'], true)): ?>
                                         <?php if (!$cancellationRequest || $cancellationRequest['status'] === 'rejected'): ?>
                                             <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#cancel-order-<?= (int) $selectedOrder['id'] ?>">Hủy đơn hàng</button>
@@ -199,40 +203,54 @@
                             <?php endif; ?>
 
                             <?php if ($detailStatus === 'completed'): ?>
-                                <div class="account-review-box">
-                                    <h3>Đánh giá của bạn</h3>
-                                    <?php foreach ($orderDetails as $detail): ?>
-                                        <?php
-                                        $reviewRecord = (int) ($detail['product_id'] ?? 0) > 0
-                                            ? (new ReviewModel())->getForUserProduct((int) $_SESSION['user']['id'], (int) $detail['product_id'])
-                                            : null;
-                                        ?>
-                                        <div class="account-review-item">
-                                            <strong><?= e($detail['product_name']) ?></strong>
-                                            <?php if ($reviewRecord): ?>
-                                                <div class="review-stars" aria-label="<?= (int) $reviewRecord['rating'] ?> sao"><?= str_repeat('★', (int) $reviewRecord['rating']) ?><?= str_repeat('☆', 5 - (int) $reviewRecord['rating']) ?></div>
-                                                <p><?= e($reviewRecord['content'] ?: 'Bạn đã đánh giá sản phẩm này.') ?></p>
-                                                <small><?= $reviewRecord['status'] === 'approved' ? 'Đã duyệt' : ($reviewRecord['status'] === 'rejected' ? 'Bị từ chối' : 'Đang chờ duyệt') ?></small>
-                                            <?php else: ?>
-                                                <form method="post" action="<?= e(url('account?tab=orders&status=review')) ?>" class="account-review-form">
-                                                    <?= csrf_field() ?>
-                                                    <input type="hidden" name="form_type" value="review">
-                                                    <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
-                                                    <input type="hidden" name="product_id" value="<?= (int) $detail['product_id'] ?>">
-                                                    <label class="form-label" for="rating-<?= (int) $detail['product_id'] ?>">Số sao</label>
-                                                    <select class="form-select mb-2" id="rating-<?= (int) $detail['product_id'] ?>" name="rating" required>
-                                                        <option value="">Chọn đánh giá</option>
-                                                        <?php for ($star = 5; $star >= 1; $star--): ?>
-                                                            <option value="<?= $star ?>"><?= $star ?> sao</option>
-                                                        <?php endfor; ?>
-                                                    </select>
-                                                    <label class="form-label" for="review-<?= (int) $detail['product_id'] ?>">Nội dung</label>
-                                                    <textarea class="form-control" id="review-<?= (int) $detail['product_id'] ?>" name="content" rows="3" maxlength="3000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea>
-                                                    <button class="btn btn-primary btn-sm mt-2" type="submit">Gửi đánh giá</button>
-                                                </form>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endforeach; ?>
+                                <div class="collapse" id="order-review-<?= (int) $selectedOrder['id'] ?>">
+                                    <div class="account-review-box">
+                                        <h3>Đánh giá sản phẩm trong đơn hàng</h3>
+                                        <?php foreach ($orderDetails as $detail): ?>
+                                            <?php
+                                            $reviewRecord = (int) ($detail['product_id'] ?? 0) > 0
+                                                ? (new ReviewModel())->getForUserProduct((int) $_SESSION['user']['id'], (int) $detail['product_id'])
+                                                : null;
+                                            ?>
+                                            <div class="account-review-item">
+                                                <strong><?= e($detail['product_name']) ?></strong>
+                                                <?php if ($reviewRecord): ?>
+                                                    <div class="review-stars" aria-label="<?= (int) $reviewRecord['rating'] ?> sao"><?= str_repeat('★', (int) $reviewRecord['rating']) ?><?= str_repeat('☆', 5 - (int) $reviewRecord['rating']) ?></div>
+                                                    <p><?= e($reviewRecord['content'] ?: 'Bạn đã đánh giá sản phẩm này.') ?></p>
+                                                    <?php foreach ($reviewRecord['media'] as $media): ?>
+                                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
+                                                        <?php if ($media['media_type'] === 'image'): ?>
+                                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener"><img class="review-media-image" src="<?= e($mediaUrl) ?>" alt="Ảnh đánh giá <?= e($detail['product_name']) ?>" loading="lazy"></a>
+                                                        <?php else: ?>
+                                                            <video class="review-media-video" controls preload="metadata"><source src="<?= e($mediaUrl) ?>">Trình duyệt không hỗ trợ phát video.</video>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                    <small><?= $reviewRecord['status'] === 'approved' ? 'Đã duyệt' : ($reviewRecord['status'] === 'rejected' ? 'Bị từ chối' : 'Đang chờ duyệt') ?></small>
+                                                <?php else: ?>
+                                                    <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&status=review')) ?>" class="account-review-form">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="form_type" value="review">
+                                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                                        <input type="hidden" name="product_id" value="<?= (int) $detail['product_id'] ?>">
+                                                        <label class="form-label" for="rating-<?= (int) $detail['product_id'] ?>">Số sao</label>
+                                                        <select class="form-select mb-2" id="rating-<?= (int) $detail['product_id'] ?>" name="rating" required>
+                                                            <option value="">Chọn đánh giá</option>
+                                                            <?php for ($star = 5; $star >= 1; $star--): ?>
+                                                                <option value="<?= $star ?>"><?= $star ?> sao</option>
+                                                            <?php endfor; ?>
+                                                        </select>
+                                                        <label class="form-label" for="review-<?= (int) $detail['product_id'] ?>">Nhận xét</label>
+                                                        <textarea class="form-control mb-2" id="review-<?= (int) $detail['product_id'] ?>" name="content" rows="3" maxlength="3000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea>
+                                                        <label class="form-label" for="review-images-<?= (int) $detail['product_id'] ?>">Hình ảnh (tối đa 4 ảnh, 5MB mỗi ảnh)</label>
+                                                        <input class="form-control mb-2" id="review-images-<?= (int) $detail['product_id'] ?>" name="review_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                                                        <label class="form-label" for="review-video-<?= (int) $detail['product_id'] ?>">Video (tối đa 50MB)</label>
+                                                        <input class="form-control mb-2" id="review-video-<?= (int) $detail['product_id'] ?>" name="review_video" type="file" accept="video/mp4,video/webm,video/quicktime">
+                                                        <button class="btn btn-primary btn-sm mt-2" type="submit">Gửi đánh giá</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
                                 </div>
                             <?php endif; ?>
 
@@ -242,51 +260,54 @@
                                 <div><span>Phí vận chuyển</span><strong><?= number_format((float) $selectedOrder['shipping_fee'], 0, ',', '.') ?>₫</strong></div>
                                 <div class="is-total"><span>Tổng thanh toán</span><strong><?= number_format((float) $selectedOrder['total_amount'], 0, ',', '.') ?>₫</strong></div>
                             </div>
-                            <?php if ($returnRequest): ?>
-                                <?php
-                                $returnStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã duyệt hoàn tiền', 'rejected' => 'Không được phê duyệt'];
-                                $returnReasons = OrderModel::returnReasons();
-                                ?>
-                                <div class="account-alert">
-                                    <strong>Yêu cầu trả hàng: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
-                                    <p class="mb-1">Lý do: <?= e($returnReasons[$returnRequest['reason']] ?? $returnRequest['reason']) ?></p>
-                                    <p><?= nl2br(e($returnRequest['description'])) ?></p>
-                                    <?php foreach ($returnRequest['media'] as $media): ?>
-                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
-                                        <?php if ($media['media_type'] === 'image'): ?>
-                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener">Xem ảnh minh chứng</a>
-                                        <?php else: ?>
-                                            <video class="return-evidence-video" controls preload="metadata">
-                                                <source src="<?= e($mediaUrl) ?>">
-                                                Trình duyệt không hỗ trợ phát video.
-                                            </video>
+                            <?php if ($detailStatus === 'completed'): ?>
+                                <div class="collapse" id="order-return-<?= (int) $selectedOrder['id'] ?>">
+                                    <div class="return-request-box">
+                                        <h3>Yêu cầu hoàn hàng và hoàn tiền</h3>
+                                        <?php if ($returnRequest): ?>
+                                            <?php
+                                            $returnStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã duyệt hoàn tiền', 'rejected' => 'Không được phê duyệt'];
+                                            $returnReasons = OrderModel::returnReasons();
+                                            ?>
+                                            <div class="account-alert">
+                                                <strong>Yêu cầu trả hàng: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
+                                                <p class="mb-1">Lý do: <?= e($returnReasons[$returnRequest['reason']] ?? $returnRequest['reason']) ?></p>
+                                                <p><?= nl2br(e($returnRequest['description'])) ?></p>
+                                                <div class="return-media-list">
+                                                    <?php foreach ($returnRequest['media'] as $media): ?>
+                                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
+                                                        <?php if ($media['media_type'] === 'image'): ?>
+                                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener"><img class="review-media-image" src="<?= e($mediaUrl) ?>" alt="Ảnh minh chứng hoàn hàng" loading="lazy"></a>
+                                                        <?php else: ?>
+                                                            <video class="return-evidence-video" controls preload="metadata"><source src="<?= e($mediaUrl) ?>">Trình duyệt không hỗ trợ phát video.</video>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
                                         <?php endif; ?>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($detailStatus === 'completed' && (!$returnRequest || $returnRequest['status'] === 'rejected')): ?>
-                                <div class="return-request-box">
-                                    <h3>Yêu cầu trả hàng và hoàn tiền</h3>
-                                    <p>Chỉ áp dụng cho đơn đã giao thành công. Gửi đủ 4 ảnh và 1 video để quản trị viên xem xét.</p>
-                                    <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&order=' . (int) $selectedOrder['id'])) ?>">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="form_type" value="return_request">
-                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
-                                        <label class="form-label" for="return-reason">Lý do trả hàng</label>
-                                        <select class="form-select mb-3" id="return-reason" name="reason" required>
-                                            <option value="">Chọn lý do</option>
-                                            <?php foreach (OrderModel::returnReasons() as $reason => $label): ?>
-                                                <option value="<?= e($reason) ?>"><?= e($label) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <label class="form-label" for="return-description">Chi tiết lý do</label>
-                                        <textarea class="form-control mb-3" id="return-description" name="description" rows="4" maxlength="3000" required></textarea>
-                                        <label class="form-label" for="return-images">4 hình ảnh hàng hóa/đơn hàng (JPG, PNG, WEBP, GIF; tối đa 5MB mỗi ảnh)</label>
-                                        <input class="form-control mb-3" id="return-images" name="evidence_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
-                                        <label class="form-label" for="return-video">1 video minh chứng (MP4, WEBM, MOV; tối đa 50MB)</label>
-                                        <input class="form-control mb-3" id="return-video" name="evidence_video" type="file" accept="video/mp4,video/webm,video/quicktime" required>
-                                        <button class="btn btn-primary" type="submit">Gửi yêu cầu phê duyệt</button>
-                                    </form>
+                                        <?php if (!$returnRequest || $returnRequest['status'] === 'rejected'): ?>
+                                            <p>Chỉ áp dụng cho đơn đã giao thành công. Gửi đủ 4 ảnh và 1 video để quản trị viên xem xét.</p>
+                                            <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&order=' . (int) $selectedOrder['id'])) ?>">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="form_type" value="return_request">
+                                                <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                                <label class="form-label" for="return-reason-<?= (int) $selectedOrder['id'] ?>">Lý do hoàn hàng</label>
+                                                <select class="form-select mb-3" id="return-reason-<?= (int) $selectedOrder['id'] ?>" name="reason" required>
+                                                    <option value="">Chọn lý do</option>
+                                                    <?php foreach (OrderModel::returnReasons() as $reason => $label): ?>
+                                                        <option value="<?= e($reason) ?>"><?= e($label) ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <label class="form-label" for="return-description-<?= (int) $selectedOrder['id'] ?>">Chi tiết yêu cầu</label>
+                                                <textarea class="form-control mb-3" id="return-description-<?= (int) $selectedOrder['id'] ?>" name="description" rows="4" maxlength="3000" required></textarea>
+                                                <label class="form-label" for="return-images-<?= (int) $selectedOrder['id'] ?>">4 hình ảnh hàng hóa/đơn hàng (JPG, PNG, WEBP, GIF; tối đa 5MB mỗi ảnh)</label>
+                                                <input class="form-control mb-3" id="return-images-<?= (int) $selectedOrder['id'] ?>" name="evidence_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
+                                                <label class="form-label" for="return-video-<?= (int) $selectedOrder['id'] ?>">1 video minh chứng (MP4, WEBM, MOV; tối đa 50MB)</label>
+                                                <input class="form-control mb-3" id="return-video-<?= (int) $selectedOrder['id'] ?>" name="evidence_video" type="file" accept="video/mp4,video/webm,video/quicktime" required>
+                                                <button class="btn btn-primary" type="submit">Gửi yêu cầu hoàn hàng</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             <?php endif; ?>
                             <a class="text-link" href="<?= e(url('account?tab=orders')) ?>">← Ẩn chi tiết</a>

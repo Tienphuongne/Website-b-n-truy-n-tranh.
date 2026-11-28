@@ -238,6 +238,15 @@ CREATE TABLE reviews (
     UNIQUE KEY uq_reviews_user_product (user_id, product_id)
 ) ENGINE=InnoDB;
 
+CREATE TABLE review_media (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT UNSIGNED NOT NULL,
+    media_type ENUM('image', 'video') NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_review_media_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
+    INDEX idx_review_media_review (review_id)
+) ENGINE=InnoDB;
+
 CREATE TABLE contacts (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(150) NOT NULL,
