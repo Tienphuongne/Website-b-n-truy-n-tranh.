@@ -72,6 +72,17 @@ class AccountController extends BaseController
                     redirect('account?tab=orders&order=' . (int) $orderId);
                 }
 
+                if (($_POST['form_type'] ?? '') === 'cancel_order') {
+                    $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                    if (!$orderId || $orderId <= 0) {
+                        throw new DomainException('Mã đơn hàng không hợp lệ.');
+                    }
+
+                    (new OrderModel())->cancelForUser($orderId, $userId, $userEmail);
+                    flash('success', 'Đã hủy đơn hàng #' . (int) $orderId . '.');
+                    redirect('account?tab=orders&status=cancelled&order=' . (int) $orderId);
+                }
+
                 $model = new UserModel();
                 if (($_POST['form_type'] ?? '') === 'profile') {
                     $profile = [
@@ -189,7 +200,8 @@ class AccountController extends BaseController
 
         try {
             $orderModel = new OrderModel();
-            $orders = $orderModel->getForUser($userId, $userEmail);
+            $allOrders = $orderModel->getForUser($userId, $userEmail);
+            $orders = $allOrders;
             $voucherSummary = (new CouponModel())->getAvailabilityForUser($userId, $userEmail);
             $wishlistProducts = (new WishlistModel())->listForUser($userId);
             $addresses = (new AddressModel())->listForUser($userId);
@@ -211,7 +223,7 @@ class AccountController extends BaseController
                 'review' => 0,
                 'cancelled' => 0,
             ];
-            foreach ($orders as $order) {
+            foreach ($allOrders as $order) {
                 $status = (string) $order['status'];
                 if ($status === 'pending') {
                     $orderStatusCounts['pending']++;
@@ -240,7 +252,7 @@ class AccountController extends BaseController
             }
 
             if ($tab === 'orders' && $requestedOrderId > 0) {
-                foreach ($orders as $order) {
+                foreach ($allOrders as $order) {
                     if ((int) $order['id'] === $requestedOrderId) {
                         $selectedOrder = $order;
                         break;
