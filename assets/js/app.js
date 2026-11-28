@@ -78,6 +78,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 document.querySelectorAll('.cart-count').forEach(function (count) {
                     count.textContent = String(result.cart_count);
+                    window.clearTimeout(count.bumpTimer);
+                    count.classList.remove('is-bumped');
+                    void count.offsetWidth;
+                    count.classList.add('is-bumped');
+                    count.bumpTimer = window.setTimeout(function () {
+                        count.classList.remove('is-bumped');
+                    }, 520);
                 });
                 showCartNotification(result.message, false);
             } catch (error) {
