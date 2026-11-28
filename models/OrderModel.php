@@ -351,10 +351,20 @@ class OrderModel extends BaseModel
             "SELECT o.id, o.total_amount, o.status, o.created_at, o.coupon_id,
                     c.code AS coupon_code, o.discount_amount, o.shipping_fee,
                     o.payment_method, o.customer_name, o.phone, o.address, o.district, o.city,
+                    rr.status AS return_status,
                     (SELECT COUNT(*) FROM order_details od WHERE od.order_id = o.id) AS item_count,
                     (SELECT COALESCE(SUM(od.quantity), 0) FROM order_details od WHERE od.order_id = o.id) AS item_quantity
              FROM orders o
              LEFT JOIN coupons c ON c.id = o.coupon_id
+             LEFT JOIN (
+                 SELECT r.order_id, r.status
+                 FROM return_requests r
+                 INNER JOIN (
+                     SELECT order_id, MAX(id) AS latest_id
+                     FROM return_requests
+                     GROUP BY order_id
+                 ) latest ON latest.latest_id = r.id
+             ) rr ON rr.order_id = o.id
              WHERE o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email)
              ORDER BY o.created_at DESC, o.id DESC",
             ['user_id' => (int) $userId, 'email' => (string) $email]
@@ -653,6 +663,45 @@ class OrderModel extends BaseModel
             $this->pdo->commit();
 
             return $requestId;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function cancelReturnRequestForUser($requestId, $orderId, $userId, $email = '')
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $request = $this->execute(
+                'SELECT rr.id, rr.status
+                 FROM return_requests rr
+                 INNER JOIN orders o ON o.id = rr.order_id
+                 WHERE rr.id = :request_id
+                   AND o.id = :order_id
+                   AND (o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email))
+                 FOR UPDATE',
+                [
+                    'request_id' => (int) $requestId,
+                    'order_id' => (int) $orderId,
+                    'user_id' => (int) $userId,
+                    'email' => (string) $email,
+                ]
+            )->fetch();
+            if (!$request) {
+                throw new DomainException('Không tìm thấy yêu cầu trả hàng trong đơn của bạn.');
+            }
+            if ($request['status'] !== 'pending') {
+                throw new DomainException('Chỉ có thể hủy yêu cầu trả hàng khi quản trị viên chưa xử lý.');
+            }
+
+            $this->execute(
+                "UPDATE return_requests SET status = 'cancelled' WHERE id = :id AND status = 'pending'",
+                ['id' => (int) $requestId]
+            );
+            $this->pdo->commit();
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();

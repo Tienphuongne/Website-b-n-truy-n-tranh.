@@ -221,7 +221,7 @@ CREATE TABLE return_requests (
     order_id BIGINT UNSIGNED NOT NULL,
     reason VARCHAR(40) NOT NULL,
     description TEXT NOT NULL,
-    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     reviewed_at DATETIME NULL,
     CONSTRAINT fk_return_requests_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
@@ -250,6 +250,15 @@ CREATE TABLE reviews (
     CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT chk_reviews_rating CHECK (rating BETWEEN 1 AND 5),
     UNIQUE KEY uq_reviews_user_product (user_id, product_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE review_media (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT UNSIGNED NOT NULL,
+    media_type ENUM('image', 'video') NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_review_media_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
+    INDEX idx_review_media_review (review_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE contacts (

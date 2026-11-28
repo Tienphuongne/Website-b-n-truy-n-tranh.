@@ -315,6 +315,9 @@ img.brand-mark { background: transparent; border-radius: 0; object-fit: contain;
 .return-request-box, .admin-return-description, .admin-return-evidence { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; margin: 20px 0; padding: 18px; }
 .return-request-box h3, .admin-return-description h3, .admin-return-evidence h3 { font-size: 15px; font-weight: 700; }
 .return-evidence-video { display: block; margin-top: 12px; max-width: 100%; width: 420px; }
+.return-media-list, .review-media-list { align-items: flex-start; display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.review-media-image { border: 1px solid var(--line); border-radius: 8px; height: 96px; object-fit: cover; width: 96px; }
+.review-media-video { display: block; max-width: 100%; width: 320px; }
 .admin-return-images { align-items: flex-start; display: flex; flex-wrap: wrap; gap: 12px; }
 .admin-return-images img { border: 1px solid var(--line); border-radius: 8px; height: 150px; object-fit: cover; width: 150px; }
 .admin-return-images video { max-width: 100%; width: 420px; }
