@@ -137,7 +137,7 @@ CREATE TABLE orders (
     coupon_id BIGINT UNSIGNED NULL,
     payment_method ENUM('cod', 'bank_transfer') NOT NULL DEFAULT 'cod',
     shipping_method ENUM('standard', 'express') NOT NULL DEFAULT 'standard',
-    status ENUM('pending', 'confirmed', 'shipping', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'confirmed', 'picked_up', 'shipping', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
     shipping_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -175,6 +175,19 @@ CREATE TABLE order_details (
     quantity INT UNSIGNED NOT NULL,
     CONSTRAINT fk_order_details_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     CONSTRAINT fk_order_details_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE cancellation_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT UNSIGNED NOT NULL,
+    reason VARCHAR(40) NOT NULL,
+    description TEXT NULL,
+    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at DATETIME NULL,
+    CONSTRAINT fk_cancellation_requests_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    INDEX idx_cancellation_requests_status_created (status, created_at),
+    INDEX idx_cancellation_requests_order (order_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE payments (

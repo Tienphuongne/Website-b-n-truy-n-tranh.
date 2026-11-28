@@ -36,6 +36,7 @@ $routes = [
     'chatbot/message' => [ChatbotController::class, 'message'],
     'chatbot/escalate' => [ChatbotController::class, 'escalate'],
     'admin/returns/review' => [AdminController::class, 'reviewReturnRequest'],
+    'admin/cancellations/review' => [AdminController::class, 'reviewCancellationRequest'],
     'admin' => [AdminController::class, 'dashboard'],
 ];
 

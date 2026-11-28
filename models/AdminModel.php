@@ -62,7 +62,7 @@ class AdminModel extends BaseModel
         'orders' => [
             'title' => 'Đơn hàng', 'query' => 'SELECT id, customer_name, total_amount, status, created_at FROM orders ORDER BY created_at DESC LIMIT 100',
             'table' => 'orders', 'create' => false, 'edit' => true, 'delete' => false, 'detail' => true,
-            'fields' => [['name' => 'status', 'label' => 'Trạng thái đơn hàng', 'type' => 'select', 'options' => ['pending' => 'Chờ xác nhận', 'confirmed' => 'Đã xác nhận', 'shipping' => 'Đang giao', 'completed' => 'Hoàn tất', 'cancelled' => 'Đã hủy']]],
+            'fields' => [['name' => 'status', 'label' => 'Trạng thái đơn hàng', 'type' => 'select', 'options' => ['pending' => 'Chờ xác nhận', 'confirmed' => 'Chờ lấy hàng', 'picked_up' => 'Lấy hàng thành công', 'shipping' => 'Đang giao', 'completed' => 'Hoàn tất', 'cancelled' => 'Đã hủy']]],
         ],
         'returns' => [
             'title' => 'Yêu cầu trả hàng',
@@ -70,6 +70,14 @@ class AdminModel extends BaseModel
                         FROM return_requests rr
                         INNER JOIN orders o ON o.id = rr.order_id
                         ORDER BY rr.created_at DESC LIMIT 100',
+            'create' => false, 'edit' => false, 'delete' => false, 'detail' => true,
+        ],
+        'cancellations' => [
+            'title' => 'Yêu cầu hủy đơn',
+            'query' => "SELECT cr.id, cr.order_id, o.customer_name, cr.reason, cr.status, cr.created_at
+                        FROM cancellation_requests cr
+                        INNER JOIN orders o ON o.id = cr.order_id
+                        ORDER BY cr.created_at DESC LIMIT 100",
             'create' => false, 'edit' => false, 'delete' => false, 'detail' => true,
         ],
         'contacts' => [

@@ -15,6 +15,7 @@ class AccountController extends BaseController
         $orders = [];
         $orderDetails = [];
         $returnRequest = null;
+        $cancellationRequest = null;
         $selectedOrder = null;
         $requestedOrderId = !empty($_GET['order']) ? (int) $_GET['order'] : 0;
         $orderNotFound = false;
@@ -77,10 +78,21 @@ class AccountController extends BaseController
                     if (!$orderId || $orderId <= 0) {
                         throw new DomainException('Mã đơn hàng không hợp lệ.');
                     }
-
-                    (new OrderModel())->cancelForUser($orderId, $userId, $userEmail);
-                    flash('success', 'Đã hủy đơn hàng #' . (int) $orderId . '.');
-                    redirect('account?tab=orders&status=cancelled&order=' . (int) $orderId);
+                    $reason = request_string($_POST, 'cancellation_reason');
+                    $description = limit_text(trim(request_string($_POST, 'cancellation_description')), 3000);
+                    $result = (new OrderModel())->requestCancellationForUser(
+                        $orderId,
+                        $userId,
+                        $userEmail,
+                        $reason,
+                        $description
+                    );
+                    if ($result === 'cancelled') {
+                        flash('success', 'Đã hủy thành công đơn hàng #' . (int) $orderId . '.');
+                        redirect('account?tab=orders&status=cancelled&order=' . (int) $orderId);
+                    }
+                    flash('success', 'Đã gửi yêu cầu hủy đơn. Vui lòng chờ quản trị viên phê duyệt.');
+                    redirect('account?tab=orders&status=pickup&order=' . (int) $orderId);
                 }
 
                 $model = new UserModel();
@@ -219,6 +231,7 @@ class AccountController extends BaseController
             $orderStatusCounts = [
                 'pending' => 0,
                 'pickup' => 0,
+                'picked_up' => 0,
                 'shipping' => 0,
                 'review' => 0,
                 'cancelled' => 0,
@@ -229,6 +242,8 @@ class AccountController extends BaseController
                     $orderStatusCounts['pending']++;
                 } elseif ($status === 'confirmed') {
                     $orderStatusCounts['pickup']++;
+                } elseif ($status === 'picked_up') {
+                    $orderStatusCounts['picked_up']++;
                 } elseif ($status === 'shipping') {
                     $orderStatusCounts['shipping']++;
                 } elseif ($status === 'completed') {
@@ -240,6 +255,7 @@ class AccountController extends BaseController
             $statusDatabaseMap = [
                 'pending' => 'pending',
                 'pickup' => 'confirmed',
+                'picked_up' => 'picked_up',
                 'shipping' => 'shipping',
                 'review' => 'completed',
                 'cancelled' => 'cancelled',
@@ -261,6 +277,7 @@ class AccountController extends BaseController
                 if ($selectedOrder) {
                     $orderDetails = $orderModel->getDetailsForUser($requestedOrderId, $userId, $userEmail);
                     $returnRequest = $orderModel->getReturnRequestForUser($requestedOrderId, $userId, $userEmail);
+                    $cancellationRequest = $orderModel->getCancellationRequestForUser($requestedOrderId, $userId, $userEmail);
                 } else {
                     $orderNotFound = true;
                 }

@@ -7,7 +7,8 @@ class ChatbotService
 {
     private const STATUS_LABELS = [
         'pending' => 'Chờ xác nhận',
-        'confirmed' => 'Đã xác nhận',
+        'confirmed' => 'Chờ lấy hàng',
+        'picked_up' => 'Lấy hàng thành công',
         'shipping' => 'Đang giao',
         'completed' => 'Hoàn tất',
         'cancelled' => 'Đã hủy',

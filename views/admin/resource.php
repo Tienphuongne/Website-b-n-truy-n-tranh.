@@ -39,7 +39,8 @@ $valueLabels = [
     'orders' => [
         'status' => [
             'pending' => 'Chờ xác nhận',
-            'confirmed' => 'Đã xác nhận',
+            'confirmed' => 'Chờ lấy hàng',
+            'picked_up' => 'Lấy hàng thành công',
             'shipping' => 'Đang giao',
             'completed' => 'Hoàn tất',
             'cancelled' => 'Đã hủy',
@@ -52,6 +53,17 @@ $valueLabels = [
             'damaged' => 'Hàng bị hỏng',
             'wrong_item' => 'Giao sai hàng',
             'missing_item' => 'Thiếu sản phẩm',
+            'other' => 'Lý do khác',
+        ],
+    ],
+    'cancellations' => [
+        'status' => ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Đã từ chối'],
+        'reason' => [
+            'no_need' => 'Tôi không còn nhu cầu mua',
+            'better_price' => 'Tôi tìm được giá bán tốt hơn',
+            'wrong_order' => 'Tôi đặt nhầm sản phẩm hoặc số lượng',
+            'shipping_address' => 'Tôi muốn thay đổi địa chỉ giao hàng',
+            'payment_issue' => 'Có vấn đề về thanh toán',
             'other' => 'Lý do khác',
         ],
     ],

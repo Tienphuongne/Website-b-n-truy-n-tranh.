@@ -35,8 +35,9 @@
                 $statusLabels = [
                     'pending' => 'Chờ xác nhận',
                     'confirmed' => 'Chờ lấy hàng',
-                    'shipping' => 'Chờ giao hàng',
-                    'completed' => 'Đánh giá',
+                    'picked_up' => 'Lấy hàng thành công',
+                    'shipping' => 'Đang giao',
+                    'completed' => 'Hoàn tất',
                     'cancelled' => 'Đã hủy',
                 ];
                 $paymentLabels = [
@@ -59,8 +60,9 @@
                     $statusTabs = [
                         'pending' => 'Chờ xác nhận',
                         'pickup' => 'Chờ lấy hàng',
+                        'picked_up' => 'Lấy hàng thành công',
                         'shipping' => 'Đang giao',
-                        'review' => 'Đánh giá',
+                        'review' => 'Hoàn tất',
                         'cancelled' => 'Đã hủy',
                     ];
                     ?>
@@ -125,15 +127,51 @@
                                 <div class="order-detail-actions">
                                     <span class="order-status-badge status-<?= e($detailStatus) ?>"><?= e($statusLabels[$detailStatus] ?? $detailStatus) ?></span>
                                     <?php if (in_array($detailStatus, ['pending', 'confirmed'], true)): ?>
-                                        <form method="post" action="<?= e(url('account?tab=orders&status=' . $orderStatusFilter)) ?>" data-confirm="Bạn có chắc muốn hủy đơn hàng #<?= (int) $selectedOrder['id'] ?>?">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="form_type" value="cancel_order">
-                                            <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
-                                            <button class="btn btn-outline-danger btn-sm" type="submit">Hủy đơn hàng</button>
-                                        </form>
+                                        <?php if (!$cancellationRequest || $cancellationRequest['status'] === 'rejected'): ?>
+                                            <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#cancel-order-<?= (int) $selectedOrder['id'] ?>">Hủy đơn hàng</button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>
+
+                            <?php if (in_array($detailStatus, ['pending', 'confirmed'], true)): ?>
+                                <?php if (!$cancellationRequest || $cancellationRequest['status'] === 'rejected'): ?>
+                                    <div class="collapse" id="cancel-order-<?= (int) $selectedOrder['id'] ?>">
+                                        <form method="post" action="<?= e(url('account?tab=orders&status=' . $orderStatusFilter)) ?>" class="account-order-cancel-form" data-confirm="Bạn có chắc muốn <?= $detailStatus === 'pending' ? 'hủy' : 'gửi yêu cầu hủy' ?> đơn hàng #<?= (int) $selectedOrder['id'] ?>?">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="form_type" value="cancel_order">
+                                            <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                            <label class="form-label" for="cancel-reason-<?= (int) $selectedOrder['id'] ?>">Lý do hủy đơn</label>
+                                            <select class="form-select mb-2" id="cancel-reason-<?= (int) $selectedOrder['id'] ?>" name="cancellation_reason" required>
+                                                <option value="">Chọn lý do</option>
+                                                <?php foreach (OrderModel::cancellationReasons() as $reason => $label): ?>
+                                                    <option value="<?= e($reason) ?>"><?= e($label) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <label class="form-label" for="cancel-description-<?= (int) $selectedOrder['id'] ?>">Chi tiết thêm (không bắt buộc)</label>
+                                            <textarea class="form-control mb-3" id="cancel-description-<?= (int) $selectedOrder['id'] ?>" name="cancellation_description" rows="3" maxlength="3000"></textarea>
+                                            <?php if ($detailStatus === 'confirmed'): ?>
+                                                <p class="small text-muted">Đơn đã chờ lấy hàng: yêu cầu hủy cần được quản trị viên phê duyệt.</p>
+                                            <?php else: ?>
+                                                <p class="small text-muted">Đơn đang chờ xác nhận: hủy thành công ngay sau khi gửi yêu cầu.</p>
+                                            <?php endif; ?>
+                                            <button class="btn btn-danger btn-sm" type="submit"><?= $detailStatus === 'pending' ? 'Xác nhận hủy' : 'Gửi yêu cầu hủy' ?></button>
+                                        </form>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <?php if ($cancellationRequest): ?>
+                                <?php
+                                $cancellationStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã được duyệt', 'rejected' => 'Đã bị từ chối'];
+                                $cancellationReasons = OrderModel::cancellationReasons();
+                                ?>
+                                <div class="account-alert">
+                                    <strong>Yêu cầu hủy đơn: <?= e($cancellationStatusLabels[$cancellationRequest['status']] ?? $cancellationRequest['status']) ?></strong>
+                                    <p class="mb-1">Lý do: <?= e($cancellationReasons[$cancellationRequest['reason']] ?? $cancellationRequest['reason']) ?></p>
+                                    <?php if (!empty($cancellationRequest['description'])): ?><p class="mb-0"><?= nl2br(e($cancellationRequest['description'])) ?></p><?php endif; ?>
+                                </div>
+                            <?php endif; ?>
 
                             <div class="account-order-meta">
                                 <div><span>Người nhận</span><strong><?= e($selectedOrder['customer_name']) ?></strong></div>
