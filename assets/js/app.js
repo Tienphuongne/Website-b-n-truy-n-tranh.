@@ -1,4 +1,65 @@
 document.addEventListener('DOMContentLoaded', function () {
+    function showSiteToast(message, type) {
+        var container = document.querySelector('[data-site-toast-container]');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'site-toast-container';
+            container.setAttribute('aria-live', 'polite');
+            container.dataset.siteToastContainer = '1';
+            document.body.appendChild(container);
+        }
+
+        var toast = document.createElement('div');
+        var safeType = ['success', 'warning', 'danger', 'info'].indexOf(type) !== -1 ? type : 'info';
+        toast.className = 'site-toast is-' + safeType;
+        toast.setAttribute('role', safeType === 'danger' ? 'alert' : 'status');
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        window.requestAnimationFrame(function () {
+            toast.classList.add('is-visible');
+        });
+        window.setTimeout(function () {
+            toast.classList.remove('is-visible');
+            toast.classList.add('is-hiding');
+            window.setTimeout(function () {
+                toast.remove();
+            }, 220);
+        }, 3000);
+    }
+
+    if (Array.isArray(window.__siteToasts)) {
+        window.__siteToasts.forEach(function (notice) {
+            showSiteToast(notice.message, notice.type);
+        });
+    }
+
+    var scrollStateKey = '_truyenthvi_scroll_state';
+    window.addEventListener('pageshow', function () {
+        try {
+            var saved = JSON.parse(sessionStorage.getItem(scrollStateKey) || 'null');
+            if (saved && saved.url === window.location.pathname + window.location.search) {
+                window.requestAnimationFrame(function () {
+                    window.scrollTo({ top: saved.scrollY, left: 0, behavior: 'auto' });
+                });
+            }
+            sessionStorage.removeItem(scrollStateKey);
+        } catch (error) {
+            sessionStorage.removeItem(scrollStateKey);
+        }
+    });
+
+    document.querySelectorAll('form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            try {
+                sessionStorage.setItem(scrollStateKey, JSON.stringify({
+                    url: window.location.pathname + window.location.search,
+                    scrollY: window.scrollY
+                }));
+            } catch (error) {}
+        });
+    });
+
     document.querySelectorAll('[data-toggle-password]').forEach(function (button) {
         button.addEventListener('click', function () {
             var input = document.getElementById(button.getAttribute('data-toggle-password'));
@@ -16,30 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function showCartNotification(message, isError) {
-        var notification = document.querySelector('[data-cart-notification]');
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.className = 'cart-notification';
-            notification.setAttribute('role', isError ? 'alert' : 'status');
-            notification.setAttribute('aria-live', isError ? 'assertive' : 'polite');
-            notification.dataset.cartNotification = '1';
-            document.body.appendChild(notification);
-            window.requestAnimationFrame(function () {
-                notification.classList.add('is-visible');
-            });
-        }
-
-        window.clearTimeout(notification.hideTimer);
-        window.clearTimeout(notification.removeTimer);
-        notification.textContent = message;
-        notification.classList.toggle('is-error', Boolean(isError));
-        notification.classList.remove('is-hiding');
-        notification.hideTimer = window.setTimeout(function () {
-            notification.classList.add('is-hiding');
-            notification.removeTimer = window.setTimeout(function () {
-                notification.remove();
-            }, 300);
-        }, 2700);
+        showSiteToast(message, isError ? 'danger' : 'success');
     }
 
     document.querySelectorAll('form[data-cart-add-form]').forEach(function (form) {

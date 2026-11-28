@@ -29,12 +29,19 @@ $jsVersion = is_file(PATH_ROOT . 'assets/js/app.js') ? (string) filemtime(PATH_R
         <main class="admin-main">
             <header class="admin-topbar d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap"><div><span class="eyebrow">TRUYENTHUVI / QUẢN TRỊ</span><h1><?= e($title ?? 'Quản trị') ?></h1></div><div class="admin-topbar-actions d-flex align-items-center gap-3"><a class="btn btn-outline-primary btn-sm" href="<?= e(url('')) ?>">Xem cửa hàng</a><div class="admin-user"><?= e($_SESSION['user']['name'] ?? 'Quản trị viên') ?></div></div></header>
             <div class="admin-content">
-                <?php foreach (take_flash_messages() as $notice): ?><div class="alert alert-<?= e($notice['type']) ?>"><?= e($notice['message']) ?></div><?php endforeach; ?>
-                <?php if (!empty($databaseError)): ?><div class="alert alert-warning"><?= e($databaseError) ?></div><?php endif; ?>
                 <?php require PATH_VIEW . $view . '.php'; ?>
             </div>
         </main>
     </div>
+    <?php
+    $flashToasts = take_flash_messages();
+    if (!empty($databaseError)) {
+        $flashToasts[] = ['type' => 'warning', 'message' => $databaseError];
+    }
+    ?>
+    <script>
+        window.__siteToasts = <?= json_encode(array_values($flashToasts), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= e(PATH_JS) ?>app.js?v=<?= e($jsVersion) ?>"></script>
 </body>

@@ -74,9 +74,7 @@
                         </a>
                     <?php endforeach; ?>
                 </div>
-                <?php if ($databaseError): ?>
-                    <p class="text-muted"><?= e($databaseError) ?></p>
-                <?php elseif ($orders || $selectedOrder): ?>
+                <?php if ($orders || $selectedOrder): ?>
                     <div class="table-responsive account-orders-table">
                     <?php if ($orders): ?>
                         <table class="table align-middle">
