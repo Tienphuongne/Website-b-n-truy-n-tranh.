@@ -540,6 +540,7 @@ a { transition: color .15s ease; }
 .status-confirmed { background: #e7f2ff; color: #2a64a8; }
 .status-shipping { background: #efe9ff; color: #6545b5; }
 .status-completed { background: #e7f7ee; color: #26825a; }
+.status-return { background: #fff1e5; color: #a65c24; }
 .status-cancelled { background: #f4e8e8; color: #a34d4d; }
 .account-alert { background: #fff7f1; border: 1px solid #f6dcca; border-radius: 9px; color: #9a5a36; font-size: 11px; margin-top: 14px; padding: 10px 13px; }
 

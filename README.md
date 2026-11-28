@@ -5,7 +5,7 @@ Website bán truyện tranh dùng PHP 8+, MySQL, PDO và Bootstrap 5. Cấu trú
 ## Chạy dự án
 
 1. Cấu hình Apache để thư mục dự án là document root và bật `mod_rewrite`/AllowOverride để dùng `.htaccess`.
-2. Tạo database và các bảng bằng cách import `database/schema.sql` vào MySQL. Với website đã cài đặt, chạy thêm `database/migrations/20261121_create_return_requests.sql` và `database/migrations/20261128_create_review_media.sql`.
+2. Tạo database và các bảng bằng cách import `database/schema.sql` vào MySQL. Với website đã cài đặt, chạy thêm `database/migrations/20261121_create_return_requests.sql`, `database/migrations/20261128_create_review_media.sql` và `database/migrations/20261128_allow_return_request_cancellation.sql`.
 3. Cấu hình biến môi trường cho tiến trình PHP:
 
    ```text
@@ -50,7 +50,7 @@ Các chức năng quản trị chính:
 
 - Sản phẩm: thêm/sửa/xóa, tải ảnh bìa, chọn nhiều thể loại và quản lý thư viện ảnh.
 - Đơn hàng: xem chi tiết khách hàng, sản phẩm, phí vận chuyển/giảm giá và cập nhật trạng thái.
-- Trả hàng/hoàn tiền: khách có thể gửi yêu cầu từ đơn đã hoàn tất, kèm lý do, mô tả bắt buộc, đúng 4 ảnh và 1 video. Quản trị viên xem minh chứng, duyệt hoặc từ chối tại mục **Yêu cầu trả hàng**; khi duyệt, hệ thống ghi nhận trạng thái thanh toán là đã hoàn tiền. Thanh toán thực tế qua ngân hàng/cổng thanh toán vẫn cần được xử lý thủ công.
+- Trả hàng/hoàn tiền: khách có thể gửi yêu cầu từ đơn đã hoàn tất, kèm lý do, mô tả bắt buộc, đúng 4 ảnh và 1 video. Đơn có yêu cầu hiển thị trong trạng thái **Trả hàng**; khách có thể hủy khi yêu cầu vẫn đang chờ duyệt. Trạng thái duyệt/từ chối được thông báo tại chi tiết đơn. Quản trị viên xem minh chứng và xử lý tại mục **Yêu cầu trả hàng**; khi duyệt, hệ thống ghi nhận trạng thái thanh toán là đã hoàn tiền. Thanh toán thực tế qua ngân hàng/cổng thanh toán vẫn cần được xử lý thủ công.
 - Đánh giá đơn hàng: từ chi tiết đơn đã hoàn tất, khách hàng có thể đánh giá từng sản phẩm bằng số sao, nhận xét, tối đa 4 ảnh và 1 video. Đánh giá cần được quản trị viên duyệt trước khi hiển thị công khai.
 - Liên hệ: theo dõi và đổi trạng thái tin nhắn từ trang liên hệ.
 - Thống kê: doanh thu 7 ngày gần nhất trên dashboard và báo cáo theo khoảng ngày tại `/admin/reports` (tối đa 5 năm gần nhất).

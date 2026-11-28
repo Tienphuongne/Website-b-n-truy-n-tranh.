@@ -1,5 +1,5 @@
 <?php
-$statusLabels = ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Đã từ chối'];
+$statusLabels = ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Đã từ chối', 'cancelled' => 'Đã hủy bởi khách hàng'];
 $reasonLabels = [
     'defective' => 'Hàng bị lỗi',
     'damaged' => 'Hàng bị hỏng',
