@@ -74,8 +74,9 @@
                 </div>
                 <?php if ($databaseError): ?>
                     <p class="text-muted"><?= e($databaseError) ?></p>
-                <?php elseif ($orders): ?>
+                <?php elseif ($orders || $selectedOrder): ?>
                     <div class="table-responsive account-orders-table">
+                    <?php if ($orders): ?>
                         <table class="table align-middle">
                             <thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th><th></th></tr></thead>
                             <tbody>
@@ -97,6 +98,7 @@
                             <?php endforeach; ?>
                             </tbody>
                         </table>
+                    <?php endif; ?>
                     </div>
 
                     <?php if ($orderNotFound && !$selectedOrder): ?>
@@ -160,7 +162,7 @@
                                 <div class="account-alert">Đơn hàng này chưa có thông tin sản phẩm.</div>
                             <?php endif; ?>
 
-                            <?php if ($orderStatusFilter === 'review' && $detailStatus === 'completed'): ?>
+                            <?php if ($detailStatus === 'completed'): ?>
                                 <div class="account-review-box">
                                     <h3>Đánh giá của bạn</h3>
                                     <?php foreach ($orderDetails as $detail): ?>

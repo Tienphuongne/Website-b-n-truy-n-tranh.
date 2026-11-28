@@ -325,6 +325,30 @@ class OrderModel extends BaseModel
         )->fetchAll();
     }
 
+    public function cancelForUser($orderId, $userId, $email = '')
+    {
+        $order = $this->execute(
+            'SELECT id, status FROM orders
+             WHERE id = :order_id
+               AND (user_id = :user_id OR (user_id IS NULL AND email = :email))
+             LIMIT 1',
+            [
+                'order_id' => (int) $orderId,
+                'user_id' => (int) $userId,
+                'email' => (string) $email,
+            ]
+        )->fetch();
+
+        if (!$order) {
+            throw new DomainException('Không tìm thấy đơn hàng trong lịch sử của bạn.');
+        }
+        if (!in_array((string) $order['status'], ['pending', 'confirmed'], true)) {
+            throw new DomainException('Chỉ có thể hủy đơn khi đơn đang chờ xác nhận hoặc chờ lấy hàng.');
+        }
+
+        $this->updateStatus((int) $orderId, 'cancelled');
+    }
+
     public function getReturnRequestForUser($orderId, $userId, $email = '')
     {
         $request = $this->execute(
