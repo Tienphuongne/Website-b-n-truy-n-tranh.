@@ -57,20 +57,20 @@ $addressJsVersion = is_file(PATH_ROOT . 'assets/js/vietnam-addresses.js') ? (str
     <?php require PATH_VIEW . 'components/header.php'; ?>
     <main>
         <div class="container">
-            <?php foreach (take_flash_messages() as $notice): ?>
-                <div class="alert alert-<?= e($notice['type']) ?> alert-dismissible fade show mt-3" role="alert">
-                    <?= e($notice['message']) ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                </div>
-            <?php endforeach; ?>
-            <?php if (!empty($databaseError)): ?>
-                <div class="alert alert-warning mt-3" role="status"><?= e($databaseError) ?></div>
-            <?php endif; ?>
         </div>
         <?php require PATH_VIEW . $view . '.php'; ?>
     </main>
     <?php require PATH_VIEW . 'components/footer.php'; ?>
     <?php require PATH_VIEW . 'components/chatbot.php'; ?>
+    <?php
+    $flashToasts = take_flash_messages();
+    if (!empty($databaseError)) {
+        $flashToasts[] = ['type' => 'warning', 'message' => $databaseError];
+    }
+    ?>
+    <script>
+        window.__siteToasts = <?= json_encode(array_values($flashToasts), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= e(PATH_JS) ?>app.js?v=<?= e($jsVersion) ?>"></script>
     <script src="<?= e(PATH_JS) ?>chatbot.js?v=<?= e($chatbotJsVersion) ?>"></script>

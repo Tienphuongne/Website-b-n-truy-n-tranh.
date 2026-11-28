@@ -1,4 +1,14 @@
-<?php $cartCount = array_sum(array_map('intval', $_SESSION['cart'] ?? [])); ?>
+<?php
+$cartCount = array_sum(array_map('intval', $_SESSION['cart'] ?? []));
+$headerNotifications = [];
+if (!empty($_SESSION['user'])) {
+    try {
+        $headerNotifications = (new NotificationModel())->listActive();
+    } catch (PDOException | RuntimeException $exception) {
+        error_log($exception->getMessage());
+    }
+}
+?>
 <header class="site-header">
     <div class="container header-main">
         <a class="brand" href="<?= e(url('')) ?>" aria-label="TruyenThuVi - trang chủ">
@@ -14,6 +24,10 @@
                 <a class="account-link" href="<?= e(url('admin')) ?>"><span>Quản trị</span></a>
             <?php endif; ?>
             <?php if (!empty($_SESSION['user'])): ?>
+                <a class="account-link notification-link" href="<?= e(url('account?tab=notifications')) ?>" title="Thông báo đơn hàng" aria-label="Thông báo đơn hàng">
+                    <span class="header-icon">🔔</span>
+                    <?php if ($headerNotifications): ?><b class="notification-count"><?= count($headerNotifications) ?></b><?php endif; ?>
+                </a>
                 <a class="account-link wishlist-link" href="<?= e(url('account?tab=wishlist')) ?>" title="Truyện yêu thích"><span class="header-icon">♥</span><b class="wishlist-count"><?= count(wishlist_ids()) ?></b></a>
                 <a class="account-link" href="<?= e(url('account')) ?>"><span class="header-icon">♙</span><span><?= e($_SESSION['user']['name']) ?></span></a>
             <?php else: ?>

@@ -7,6 +7,8 @@
             <a class="<?= $tab === 'profile' ? 'active' : '' ?>" href="<?= e(url('account')) ?>">Thông tin cá nhân</a>
             <a class="<?= $tab === 'password' ? 'active' : '' ?>" href="<?= e(url('account?tab=password')) ?>">Đổi mật khẩu</a>
             <a class="<?= $tab === 'orders' ? 'active' : '' ?>" href="<?= e(url('account?tab=orders')) ?>">Đơn hàng</a>
+            <a class="<?= $tab === 'notifications' ? 'active' : '' ?>" href="<?= e(url('account?tab=notifications')) ?>">Thông báo đơn hàng</a>
+            <a class="<?= $tab === 'promotions' ? 'active' : '' ?>" href="<?= e(url('account?tab=promotions')) ?>">Khuyến mãi</a>
             <a class="<?= $tab === 'wishlist' ? 'active' : '' ?>" href="<?= e(url('account?tab=wishlist')) ?>">Yêu thích (<?= count($wishlistProducts) ?>)</a>
             <a class="<?= $tab === 'addresses' ? 'active' : '' ?>" href="<?= e(url('account?tab=addresses')) ?>">Sổ địa chỉ</a>
 
@@ -35,8 +37,10 @@
                 $statusLabels = [
                     'pending' => 'Chờ xác nhận',
                     'confirmed' => 'Chờ lấy hàng',
-                    'shipping' => 'Chờ giao hàng',
-                    'completed' => 'Đánh giá',
+                    'picked_up' => 'Lấy hàng thành công',
+                    'shipping' => 'Đang giao',
+                    'completed' => 'Hoàn tất',
+                    'return' => 'Trả hàng',
                     'cancelled' => 'Đã hủy',
                 ];
                 $paymentLabels = [
@@ -59,8 +63,10 @@
                     $statusTabs = [
                         'pending' => 'Chờ xác nhận',
                         'pickup' => 'Chờ lấy hàng',
+                        'picked_up' => 'Lấy hàng thành công',
                         'shipping' => 'Đang giao',
-                        'review' => 'Đánh giá',
+                        'review' => 'Hoàn tất',
+                        'return' => 'Trả hàng',
                         'cancelled' => 'Đã hủy',
                     ];
                     ?>
@@ -72,16 +78,16 @@
                         </a>
                     <?php endforeach; ?>
                 </div>
-                <?php if ($databaseError): ?>
-                    <p class="text-muted"><?= e($databaseError) ?></p>
-                <?php elseif ($orders): ?>
+                <?php if ($orders || $selectedOrder): ?>
                     <div class="table-responsive account-orders-table">
+                    <?php if ($orders): ?>
                         <table class="table align-middle">
                             <thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th><th></th></tr></thead>
                             <tbody>
                             <?php foreach ($orders as $order): ?>
                                 <?php
-                                $orderStatus = (string) $order['status'];
+                                $hasReturnRequest = !empty($order['return_status']) && $order['return_status'] !== 'cancelled';
+                                $orderStatus = $hasReturnRequest ? 'return' : (string) $order['status'];
                                 $isSelected = $selectedOrder && (int) $selectedOrder['id'] === (int) $order['id'];
                                 ?>
                                 <tr class="<?= $isSelected ? 'is-selected' : '' ?>">
@@ -97,6 +103,7 @@
                             <?php endforeach; ?>
                             </tbody>
                         </table>
+                    <?php endif; ?>
                     </div>
 
                     <?php if ($orderNotFound && !$selectedOrder): ?>
@@ -109,7 +116,9 @@
                         foreach ($orderDetails as $detail) {
                             $detailSubtotal += (float) $detail['unit_price'] * (int) $detail['quantity'];
                         }
-                        $detailStatus = (string) $selectedOrder['status'];
+                        $orderStatus = (string) $selectedOrder['status'];
+                        $hasReturnRequest = !empty($selectedOrder['return_status']) && $selectedOrder['return_status'] !== 'cancelled';
+                        $detailStatus = $hasReturnRequest ? 'return' : $orderStatus;
                         $addressParts = array_filter([
                             $selectedOrder['address'] ?? '',
                             $selectedOrder['district'] ?? '',
@@ -122,16 +131,64 @@
                                 <div><h3>Chi tiết đơn #<?= (int) $selectedOrder['id'] ?></h3><p>Đặt lúc <?= e($formatOrderDate($selectedOrder['created_at'])) ?></p></div>
                                 <div class="order-detail-actions">
                                     <span class="order-status-badge status-<?= e($detailStatus) ?>"><?= e($statusLabels[$detailStatus] ?? $detailStatus) ?></span>
+                                    <?php if ($orderStatus === 'completed'): ?>
+                                        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#order-review-<?= (int) $selectedOrder['id'] ?>" aria-expanded="false" aria-controls="order-review-<?= (int) $selectedOrder['id'] ?>">Đánh giá</button>
+                                        <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#order-return-<?= (int) $selectedOrder['id'] ?>" aria-expanded="false" aria-controls="order-return-<?= (int) $selectedOrder['id'] ?>">Yêu cầu hoàn hàng</button>
+                                    <?php endif; ?>
                                     <?php if (in_array($detailStatus, ['pending', 'confirmed'], true)): ?>
-                                        <form method="post" action="<?= e(url('account?tab=orders&status=' . $orderStatusFilter)) ?>" data-confirm="Bạn có chắc muốn hủy đơn hàng #<?= (int) $selectedOrder['id'] ?>?">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="form_type" value="cancel_order">
-                                            <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
-                                            <button class="btn btn-outline-danger btn-sm" type="submit">Hủy đơn hàng</button>
-                                        </form>
+                                        <?php if (!$cancellationRequest || $cancellationRequest['status'] === 'rejected'): ?>
+                                            <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#cancel-order-<?= (int) $selectedOrder['id'] ?>">Hủy đơn hàng</button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>
+                            <?php if ($returnRequest && in_array($returnRequest['status'], ['approved', 'rejected'], true)): ?>
+                                <div class="account-alert" role="status">
+                                    <strong>Thông báo yêu cầu hoàn hàng</strong>
+                                    <p class="mb-0"><?= $returnRequest['status'] === 'approved'
+                                        ? 'Yêu cầu của bạn đã được quản trị viên chấp thuận.'
+                                        : 'Yêu cầu của bạn đã bị quản trị viên từ chối.' ?> Nhấn “Yêu cầu hoàn hàng” để xem chi tiết.</p>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if (in_array($detailStatus, ['pending', 'confirmed'], true)): ?>
+                                <?php if (!$cancellationRequest || $cancellationRequest['status'] === 'rejected'): ?>
+                                    <div class="collapse" id="cancel-order-<?= (int) $selectedOrder['id'] ?>">
+                                        <form method="post" action="<?= e(url('account?tab=orders&status=' . $orderStatusFilter)) ?>" class="account-order-cancel-form" data-confirm="Bạn có chắc muốn <?= $detailStatus === 'pending' ? 'hủy' : 'gửi yêu cầu hủy' ?> đơn hàng #<?= (int) $selectedOrder['id'] ?>?">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="form_type" value="cancel_order">
+                                            <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                            <label class="form-label" for="cancel-reason-<?= (int) $selectedOrder['id'] ?>">Lý do hủy đơn</label>
+                                            <select class="form-select mb-2" id="cancel-reason-<?= (int) $selectedOrder['id'] ?>" name="cancellation_reason" required>
+                                                <option value="">Chọn lý do</option>
+                                                <?php foreach (OrderModel::cancellationReasons() as $reason => $label): ?>
+                                                    <option value="<?= e($reason) ?>"><?= e($label) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <label class="form-label" for="cancel-description-<?= (int) $selectedOrder['id'] ?>">Chi tiết thêm (không bắt buộc)</label>
+                                            <textarea class="form-control mb-3" id="cancel-description-<?= (int) $selectedOrder['id'] ?>" name="cancellation_description" rows="3" maxlength="3000"></textarea>
+                                            <?php if ($detailStatus === 'confirmed'): ?>
+                                                <p class="small text-muted">Đơn đã chờ lấy hàng: yêu cầu hủy cần được quản trị viên phê duyệt.</p>
+                                            <?php else: ?>
+                                                <p class="small text-muted">Đơn đang chờ xác nhận: hủy thành công ngay sau khi gửi yêu cầu.</p>
+                                            <?php endif; ?>
+                                            <button class="btn btn-danger btn-sm" type="submit"><?= $detailStatus === 'pending' ? 'Xác nhận hủy' : 'Gửi yêu cầu hủy' ?></button>
+                                        </form>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <?php if ($cancellationRequest): ?>
+                                <?php
+                                $cancellationStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã được duyệt', 'rejected' => 'Đã bị từ chối'];
+                                $cancellationReasons = OrderModel::cancellationReasons();
+                                ?>
+                                <div class="account-alert">
+                                    <strong>Yêu cầu hủy đơn: <?= e($cancellationStatusLabels[$cancellationRequest['status']] ?? $cancellationRequest['status']) ?></strong>
+                                    <p class="mb-1">Lý do: <?= e($cancellationReasons[$cancellationRequest['reason']] ?? $cancellationRequest['reason']) ?></p>
+                                    <?php if (!empty($cancellationRequest['description'])): ?><p class="mb-0"><?= nl2br(e($cancellationRequest['description'])) ?></p><?php endif; ?>
+                                </div>
+                            <?php endif; ?>
 
                             <div class="account-order-meta">
                                 <div><span>Người nhận</span><strong><?= e($selectedOrder['customer_name']) ?></strong></div>
@@ -160,41 +217,57 @@
                                 <div class="account-alert">Đơn hàng này chưa có thông tin sản phẩm.</div>
                             <?php endif; ?>
 
-                            <?php if ($orderStatusFilter === 'review' && $detailStatus === 'completed'): ?>
-                                <div class="account-review-box">
-                                    <h3>Đánh giá của bạn</h3>
-                                    <?php foreach ($orderDetails as $detail): ?>
-                                        <?php
-                                        $reviewRecord = (int) ($detail['product_id'] ?? 0) > 0
-                                            ? (new ReviewModel())->getForUserProduct((int) $_SESSION['user']['id'], (int) $detail['product_id'])
-                                            : null;
-                                        ?>
-                                        <div class="account-review-item">
-                                            <strong><?= e($detail['product_name']) ?></strong>
-                                            <?php if ($reviewRecord): ?>
-                                                <div class="review-stars" aria-label="<?= (int) $reviewRecord['rating'] ?> sao"><?= str_repeat('★', (int) $reviewRecord['rating']) ?><?= str_repeat('☆', 5 - (int) $reviewRecord['rating']) ?></div>
-                                                <p><?= e($reviewRecord['content'] ?: 'Bạn đã đánh giá sản phẩm này.') ?></p>
-                                                <small><?= $reviewRecord['status'] === 'approved' ? 'Đã duyệt' : ($reviewRecord['status'] === 'rejected' ? 'Bị từ chối' : 'Đang chờ duyệt') ?></small>
-                                            <?php else: ?>
-                                                <form method="post" action="<?= e(url('account?tab=orders&status=review')) ?>" class="account-review-form">
-                                                    <?= csrf_field() ?>
-                                                    <input type="hidden" name="form_type" value="review">
-                                                    <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
-                                                    <input type="hidden" name="product_id" value="<?= (int) $detail['product_id'] ?>">
-                                                    <label class="form-label" for="rating-<?= (int) $detail['product_id'] ?>">Số sao</label>
-                                                    <select class="form-select mb-2" id="rating-<?= (int) $detail['product_id'] ?>" name="rating" required>
-                                                        <option value="">Chọn đánh giá</option>
-                                                        <?php for ($star = 5; $star >= 1; $star--): ?>
-                                                            <option value="<?= $star ?>"><?= $star ?> sao</option>
-                                                        <?php endfor; ?>
-                                                    </select>
-                                                    <label class="form-label" for="review-<?= (int) $detail['product_id'] ?>">Nội dung</label>
-                                                    <textarea class="form-control" id="review-<?= (int) $detail['product_id'] ?>" name="content" rows="3" maxlength="3000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea>
-                                                    <button class="btn btn-primary btn-sm mt-2" type="submit">Gửi đánh giá</button>
-                                                </form>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endforeach; ?>
+                            <?php if ($orderStatus === 'completed'): ?>
+                                <div class="collapse" id="order-review-<?= (int) $selectedOrder['id'] ?>">
+                                    <div class="account-review-box">
+                                        <h3>Đánh giá sản phẩm trong đơn hàng</h3>
+                                        <?php foreach ($orderDetails as $detail): ?>
+                                            <?php
+                                            $reviewRecord = (int) ($detail['product_id'] ?? 0) > 0
+                                                ? (new ReviewModel())->getForUserProduct((int) $_SESSION['user']['id'], (int) $detail['product_id'])
+                                                : null;
+                                            ?>
+                                            <div class="account-review-item">
+                                                <strong><?= e($detail['product_name']) ?></strong>
+                                                <?php if ($reviewRecord): ?>
+                                                    <div class="review-stars" aria-label="<?= (int) $reviewRecord['rating'] ?> sao"><?= str_repeat('★', (int) $reviewRecord['rating']) ?><?= str_repeat('☆', 5 - (int) $reviewRecord['rating']) ?></div>
+                                                    <p><?= e($reviewRecord['content'] ?: 'Bạn đã đánh giá sản phẩm này.') ?></p>
+                                                    <?php foreach ($reviewRecord['media'] as $media): ?>
+                                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
+                                                        <?php if ($media['media_type'] === 'image'): ?>
+                                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener"><img class="review-media-image" src="<?= e($mediaUrl) ?>" alt="Ảnh đánh giá <?= e($detail['product_name']) ?>" loading="lazy"></a>
+                                                        <?php else: ?>
+                                                            <video class="review-media-video" controls preload="metadata"><source src="<?= e($mediaUrl) ?>">Trình duyệt không hỗ trợ phát video.</video>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                    <small><?= $reviewRecord['status'] === 'approved' ? 'Đã duyệt' : ($reviewRecord['status'] === 'rejected' ? 'Bị từ chối' : 'Đang chờ duyệt') ?></small>
+                                                <?php else: ?>
+                                                    <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&status=review')) ?>" class="account-review-form">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="form_type" value="review">
+                                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                                        <input type="hidden" name="product_id" value="<?= (int) $detail['product_id'] ?>">
+                                                        <fieldset class="rating-choice mb-2">
+                                                            <legend class="form-label">Chọn số sao</legend>
+                                                            <div class="rating-stars-input" role="radiogroup" aria-label="Chọn số sao đánh giá">
+                                                                <?php for ($star = 5; $star >= 1; $star--): ?>
+                                                                    <input class="rating-input-radio" id="rating-<?= (int) $detail['product_id'] ?>-<?= $star ?>" name="rating" type="radio" value="<?= $star ?>" aria-label="<?= $star ?> sao" required>
+                                                                    <label for="rating-<?= (int) $detail['product_id'] ?>-<?= $star ?>" title="<?= $star ?> sao" aria-label="<?= $star ?> sao">★</label>
+                                                                <?php endfor; ?>
+                                                            </div>
+                                                        </fieldset>
+                                                        <label class="form-label" for="review-<?= (int) $detail['product_id'] ?>">Nhận xét</label>
+                                                        <textarea class="form-control mb-2" id="review-<?= (int) $detail['product_id'] ?>" name="content" rows="3" maxlength="3000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea>
+                                                        <label class="form-label" for="review-images-<?= (int) $detail['product_id'] ?>">Hình ảnh (tối đa 4 ảnh, 5MB mỗi ảnh)</label>
+                                                        <input class="form-control mb-2" id="review-images-<?= (int) $detail['product_id'] ?>" name="review_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                                                        <label class="form-label" for="review-video-<?= (int) $detail['product_id'] ?>">Video (tối đa 50MB)</label>
+                                                        <input class="form-control mb-2" id="review-video-<?= (int) $detail['product_id'] ?>" name="review_video" type="file" accept="video/mp4,video/webm,video/quicktime">
+                                                        <button class="btn btn-primary btn-sm mt-2" type="submit">Gửi đánh giá</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
                                 </div>
                             <?php endif; ?>
 
@@ -204,51 +277,70 @@
                                 <div><span>Phí vận chuyển</span><strong><?= number_format((float) $selectedOrder['shipping_fee'], 0, ',', '.') ?>₫</strong></div>
                                 <div class="is-total"><span>Tổng thanh toán</span><strong><?= number_format((float) $selectedOrder['total_amount'], 0, ',', '.') ?>₫</strong></div>
                             </div>
-                            <?php if ($returnRequest): ?>
-                                <?php
-                                $returnStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã duyệt hoàn tiền', 'rejected' => 'Không được phê duyệt'];
-                                $returnReasons = OrderModel::returnReasons();
-                                ?>
-                                <div class="account-alert">
-                                    <strong>Yêu cầu trả hàng: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
-                                    <p class="mb-1">Lý do: <?= e($returnReasons[$returnRequest['reason']] ?? $returnRequest['reason']) ?></p>
-                                    <p><?= nl2br(e($returnRequest['description'])) ?></p>
-                                    <?php foreach ($returnRequest['media'] as $media): ?>
-                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
-                                        <?php if ($media['media_type'] === 'image'): ?>
-                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener">Xem ảnh minh chứng</a>
-                                        <?php else: ?>
-                                            <video class="return-evidence-video" controls preload="metadata">
-                                                <source src="<?= e($mediaUrl) ?>">
-                                                Trình duyệt không hỗ trợ phát video.
-                                            </video>
+                            <?php if ($orderStatus === 'completed'): ?>
+                                <div class="collapse" id="order-return-<?= (int) $selectedOrder['id'] ?>">
+                                    <div class="return-request-box">
+                                        <h3>Yêu cầu hoàn hàng và hoàn tiền</h3>
+                                        <?php if ($returnRequest): ?>
+                                            <?php
+                                            $returnStatusLabels = ['pending' => 'Đang chờ duyệt', 'approved' => 'Đã được duyệt', 'rejected' => 'Bị từ chối', 'cancelled' => 'Đã hủy'];
+                                            $returnReasons = OrderModel::returnReasons();
+                                            $returnStatusMessages = [
+                                                'pending' => 'Yêu cầu của bạn đã được gửi và đang chờ quản trị viên xử lý.',
+                                                'approved' => 'Yêu cầu hoàn hàng của bạn đã được quản trị viên chấp thuận.',
+                                                'rejected' => 'Yêu cầu hoàn hàng của bạn đã bị quản trị viên từ chối.',
+                                                'cancelled' => 'Bạn đã hủy yêu cầu hoàn hàng này.',
+                                            ];
+                                            ?>
+                                            <div class="account-alert">
+                                                <strong>Trạng thái yêu cầu: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
+                                                <p><?= e($returnStatusMessages[$returnRequest['status']] ?? '') ?></p>
+                                                <p class="mb-1">Lý do: <?= e($returnReasons[$returnRequest['reason']] ?? $returnRequest['reason']) ?></p>
+                                                <p><?= nl2br(e($returnRequest['description'])) ?></p>
+                                                <div class="return-media-list">
+                                                    <?php foreach ($returnRequest['media'] as $media): ?>
+                                                        <?php $mediaUrl = BASE_ASSETS_UPLOADS . ltrim((string) $media['file_path'], '/\\'); ?>
+                                                        <?php if ($media['media_type'] === 'image'): ?>
+                                                            <a href="<?= e($mediaUrl) ?>" target="_blank" rel="noopener"><img class="review-media-image" src="<?= e($mediaUrl) ?>" alt="Ảnh minh chứng hoàn hàng" loading="lazy"></a>
+                                                        <?php else: ?>
+                                                            <video class="return-evidence-video" controls preload="metadata"><source src="<?= e($mediaUrl) ?>">Trình duyệt không hỗ trợ phát video.</video>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                                <?php if ($returnRequest['status'] === 'pending'): ?>
+                                                    <form method="post" action="<?= e(url('account?tab=orders&status=return&order=' . (int) $selectedOrder['id'])) ?>" class="mt-3" data-confirm="Bạn có chắc muốn hủy yêu cầu hoàn hàng này?">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="form_type" value="cancel_return_request">
+                                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                                        <input type="hidden" name="request_id" value="<?= (int) $returnRequest['id'] ?>">
+                                                        <button class="btn btn-outline-danger btn-sm" type="submit">Hủy yêu cầu hoàn hàng</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
                                         <?php endif; ?>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($detailStatus === 'completed' && (!$returnRequest || $returnRequest['status'] === 'rejected')): ?>
-                                <div class="return-request-box">
-                                    <h3>Yêu cầu trả hàng và hoàn tiền</h3>
-                                    <p>Chỉ áp dụng cho đơn đã giao thành công. Gửi đủ 4 ảnh và 1 video để quản trị viên xem xét.</p>
-                                    <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&order=' . (int) $selectedOrder['id'])) ?>">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="form_type" value="return_request">
-                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
-                                        <label class="form-label" for="return-reason">Lý do trả hàng</label>
-                                        <select class="form-select mb-3" id="return-reason" name="reason" required>
-                                            <option value="">Chọn lý do</option>
-                                            <?php foreach (OrderModel::returnReasons() as $reason => $label): ?>
-                                                <option value="<?= e($reason) ?>"><?= e($label) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <label class="form-label" for="return-description">Chi tiết lý do</label>
-                                        <textarea class="form-control mb-3" id="return-description" name="description" rows="4" maxlength="3000" required></textarea>
-                                        <label class="form-label" for="return-images">4 hình ảnh hàng hóa/đơn hàng (JPG, PNG, WEBP, GIF; tối đa 5MB mỗi ảnh)</label>
-                                        <input class="form-control mb-3" id="return-images" name="evidence_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
-                                        <label class="form-label" for="return-video">1 video minh chứng (MP4, WEBM, MOV; tối đa 50MB)</label>
-                                        <input class="form-control mb-3" id="return-video" name="evidence_video" type="file" accept="video/mp4,video/webm,video/quicktime" required>
-                                        <button class="btn btn-primary" type="submit">Gửi yêu cầu phê duyệt</button>
-                                    </form>
+                                        <?php if (!$returnRequest || in_array($returnRequest['status'], ['rejected', 'cancelled'], true)): ?>
+                                            <p>Chỉ áp dụng cho đơn đã giao thành công. Gửi đủ 4 ảnh và 1 video để quản trị viên xem xét.</p>
+                                            <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&order=' . (int) $selectedOrder['id'])) ?>">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="form_type" value="return_request">
+                                                <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                                <label class="form-label" for="return-reason-<?= (int) $selectedOrder['id'] ?>">Lý do hoàn hàng</label>
+                                                <select class="form-select mb-3" id="return-reason-<?= (int) $selectedOrder['id'] ?>" name="reason" required>
+                                                    <option value="">Chọn lý do</option>
+                                                    <?php foreach (OrderModel::returnReasons() as $reason => $label): ?>
+                                                        <option value="<?= e($reason) ?>"><?= e($label) ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <label class="form-label" for="return-description-<?= (int) $selectedOrder['id'] ?>">Chi tiết yêu cầu</label>
+                                                <textarea class="form-control mb-3" id="return-description-<?= (int) $selectedOrder['id'] ?>" name="description" rows="4" maxlength="3000" required></textarea>
+                                                <label class="form-label" for="return-images-<?= (int) $selectedOrder['id'] ?>">4 hình ảnh hàng hóa/đơn hàng (JPG, PNG, WEBP, GIF; tối đa 5MB mỗi ảnh)</label>
+                                                <input class="form-control mb-3" id="return-images-<?= (int) $selectedOrder['id'] ?>" name="evidence_images[]" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required>
+                                                <label class="form-label" for="return-video-<?= (int) $selectedOrder['id'] ?>">1 video minh chứng (MP4, WEBM, MOV; tối đa 50MB)</label>
+                                                <input class="form-control mb-3" id="return-video-<?= (int) $selectedOrder['id'] ?>" name="evidence_video" type="file" accept="video/mp4,video/webm,video/quicktime" required>
+                                                <button class="btn btn-primary" type="submit">Gửi yêu cầu hoàn hàng</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             <?php endif; ?>
                             <a class="text-link" href="<?= e(url('account?tab=orders')) ?>">← Ẩn chi tiết</a>
@@ -256,6 +348,83 @@
                     <?php endif; ?>
                 <?php else: ?>
                     <div class="muted-panel">Bạn chưa có đơn hàng nào. <a href="<?= e(url('products')) ?>">Khám phá truyện ngay</a>.</div>
+                <?php endif; ?>
+            <?php elseif ($tab === 'notifications'): ?>
+                <div class="account-section-head">
+                    <div><h2>Thông báo đơn hàng</h2><p>Cập nhật mới nhất về trạng thái đơn hàng của bạn.</p></div>
+                </div>
+                <?php if (!empty($activeNotifications)): ?>
+                    <div class="account-banner-list">
+                        <?php foreach ($activeNotifications as $notification): ?>
+                            <?php $bannerUrl = !empty($notification['link_url']) ? (string) $notification['link_url'] : ''; ?>
+                            <?php if ($bannerUrl): ?><a class="account-banner" href="<?= e($bannerUrl) ?>"><?php else: ?><article class="account-banner"><?php endif; ?>
+                                <?php if (!empty($notification['image_path'])): ?>
+                                    <img src="<?= e(BASE_ASSETS_UPLOADS . ltrim((string) $notification['image_path'], '/\\')) ?>" alt="<?= e($notification['title']) ?>">
+                                <?php endif; ?>
+                                <div>
+                                    <strong><?= e($notification['title']) ?></strong>
+                                    <?php if (!empty($notification['message'])): ?><p><?= e($notification['message']) ?></p><?php endif; ?>
+                                </div>
+                            <?php if ($bannerUrl): ?></a><?php else: ?></article><?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+                <?php
+                $notificationLabels = [
+                    'pending' => 'Đơn hàng đang chờ xác nhận',
+                    'confirmed' => 'Đơn hàng đã được xác nhận',
+                    'picked_up' => 'Đơn hàng đã được lấy thành công',
+                    'shipping' => 'Đơn hàng đang được giao',
+                    'completed' => 'Đơn hàng đã hoàn tất',
+                    'cancelled' => 'Đơn hàng đã được hủy',
+                ];
+                ?>
+                <?php if ($allOrders): ?>
+                    <div class="account-notification-list">
+                        <?php foreach (array_slice($allOrders, 0, 10) as $order): ?>
+                            <?php
+                            $orderStatus = (string) $order['status'];
+                            $orderDate = !empty($order['created_at']) ? date('d/m/Y H:i', strtotime((string) $order['created_at'])) : '—';
+                            ?>
+                            <article class="account-notification-item">
+                                <span class="account-notification-dot status-dot-<?= e($orderStatus) ?>" aria-hidden="true"></span>
+                                <div>
+                                    <strong><?= e($notificationLabels[$orderStatus] ?? 'Cập nhật đơn hàng') ?></strong>
+                                    <p>Mã đơn #<?= (int) $order['id'] ?> · <?= e($orderDate) ?></p>
+                                </div>
+                                <a href="<?= e(url('account?tab=orders&status=' . rawurlencode($orderStatusFilter) . '&order=' . (int) $order['id'])) ?>">Xem</a>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="muted-panel">Chưa có thông báo đơn hàng nào.</div>
+                <?php endif; ?>
+            <?php elseif ($tab === 'promotions'): ?>
+                <div class="account-section-head">
+                    <div><h2>Chương trình khuyến mãi</h2><p>Các mã giảm giá đang được kích hoạt trên cửa hàng.</p></div>
+                    <a class="btn btn-outline-primary btn-sm" href="<?= e(url('checkout')) ?>">Đi đến thanh toán</a>
+                </div>
+                <?php if (!empty($voucherSummary['promotions'])): ?>
+                    <div class="account-promotion-list">
+                        <?php foreach ($voucherSummary['promotions'] as $promotion): ?>
+                            <?php
+                            $promotionLabel = $promotion['discount_type'] === 'percent'
+                                ? rtrim(rtrim(number_format((float) $promotion['discount_value'], 1, '.', ''), '0'), '.') . '%'
+                                : number_format((float) $promotion['discount_value'], 0, ',', '.') . '₫';
+                            $endDate = !empty($promotion['ends_at']) ? date('d/m/Y', strtotime((string) $promotion['ends_at'])) : 'Không giới hạn';
+                            ?>
+                            <article class="account-promotion-card">
+                                <div class="account-promotion-value"><?= e($promotionLabel) ?></div>
+                                <div class="account-promotion-info">
+                                    <strong><?= e($promotion['code']) ?></strong>
+                                    <p>Đơn tối thiểu <?= number_format((float) $promotion['minimum_order'], 0, ',', '.') ?>₫ · Hết hạn <?= e($endDate) ?></p>
+                                </div>
+                                <a class="btn btn-sm btn-outline-primary" href="<?= e(url('checkout')) ?>">Sử dụng</a>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="muted-panel">Hiện chưa có chương trình khuyến mãi nào.</div>
                 <?php endif; ?>
             <?php elseif ($tab === 'wishlist'): ?>
                 <div class="account-section-head">

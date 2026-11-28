@@ -15,6 +15,7 @@ class AccountController extends BaseController
         $orders = [];
         $orderDetails = [];
         $returnRequest = null;
+        $cancellationRequest = null;
         $selectedOrder = null;
         $requestedOrderId = !empty($_GET['order']) ? (int) $_GET['order'] : 0;
         $orderNotFound = false;
@@ -22,6 +23,7 @@ class AccountController extends BaseController
         $wishlistProducts = [];
         $addresses = [];
         $editingAddress = null;
+        $activeNotifications = [];
         $databaseError = null;
         $orderStatusFilter = (string) ($_GET['status'] ?? 'pending');
 
@@ -70,6 +72,57 @@ class AccountController extends BaseController
                     $this->submitReturnRequest($orderId, $userId, $userEmail);
                     flash('success', 'Đã gửi yêu cầu trả hàng. Vui lòng chờ quản trị viên phê duyệt.');
                     redirect('account?tab=orders&order=' . (int) $orderId);
+                }
+
+                if (($_POST['form_type'] ?? '') === 'cancel_return_request') {
+                    $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                    $requestId = filter_var($_POST['request_id'] ?? null, FILTER_VALIDATE_INT);
+                    if (!$orderId || $orderId <= 0 || !$requestId || $requestId <= 0) {
+                        throw new DomainException('Mã đơn hàng hoặc yêu cầu trả hàng không hợp lệ.');
+                    }
+
+                    (new OrderModel())->cancelReturnRequestForUser(
+                        $requestId,
+                        $orderId,
+                        $userId,
+                        $userEmail
+                    );
+                    flash('success', 'Đã hủy yêu cầu trả hàng. Đơn hàng đã trở về trạng thái hoàn tất.');
+                    redirect('account?tab=orders&status=review&order=' . (int) $orderId);
+                }
+
+                if (($_POST['form_type'] ?? '') === 'review') {
+                    $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                    $productId = filter_var($_POST['product_id'] ?? null, FILTER_VALIDATE_INT);
+                    if (!$orderId || $orderId <= 0 || !$productId || $productId <= 0) {
+                        throw new DomainException('Đơn hàng hoặc sản phẩm cần đánh giá không hợp lệ.');
+                    }
+
+                    $this->submitReview($orderId, $productId, $userId, $userEmail);
+                    flash('success', 'Cảm ơn bạn! Đánh giá sẽ hiển thị sau khi được duyệt.');
+                    redirect('account?tab=orders&status=review&order=' . (int) $orderId);
+                }
+
+                if (($_POST['form_type'] ?? '') === 'cancel_order') {
+                    $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                    if (!$orderId || $orderId <= 0) {
+                        throw new DomainException('Mã đơn hàng không hợp lệ.');
+                    }
+                    $reason = request_string($_POST, 'cancellation_reason');
+                    $description = limit_text(trim(request_string($_POST, 'cancellation_description')), 3000);
+                    $result = (new OrderModel())->requestCancellationForUser(
+                        $orderId,
+                        $userId,
+                        $userEmail,
+                        $reason,
+                        $description
+                    );
+                    if ($result === 'cancelled') {
+                        flash('success', 'Đã hủy thành công đơn hàng #' . (int) $orderId . '.');
+                        redirect('account?tab=orders&status=cancelled&order=' . (int) $orderId);
+                    }
+                    flash('success', 'Đã gửi yêu cầu hủy đơn. Vui lòng chờ quản trị viên phê duyệt.');
+                    redirect('account?tab=orders&status=pickup&order=' . (int) $orderId);
                 }
 
                 $model = new UserModel();
@@ -189,8 +242,10 @@ class AccountController extends BaseController
 
         try {
             $orderModel = new OrderModel();
-            $orders = $orderModel->getForUser($userId, $userEmail);
+            $allOrders = $orderModel->getForUser($userId, $userEmail);
+            $orders = $allOrders;
             $voucherSummary = (new CouponModel())->getAvailabilityForUser($userId, $userEmail);
+            $activeNotifications = (new NotificationModel())->listActive();
             $wishlistProducts = (new WishlistModel())->listForUser($userId);
             $addresses = (new AddressModel())->listForUser($userId);
 
@@ -207,16 +262,23 @@ class AccountController extends BaseController
             $orderStatusCounts = [
                 'pending' => 0,
                 'pickup' => 0,
+                'picked_up' => 0,
                 'shipping' => 0,
                 'review' => 0,
+                'return' => 0,
                 'cancelled' => 0,
             ];
-            foreach ($orders as $order) {
+            foreach ($allOrders as $order) {
                 $status = (string) $order['status'];
-                if ($status === 'pending') {
+                $hasReturnRequest = !empty($order['return_status']) && $order['return_status'] !== 'cancelled';
+                if ($hasReturnRequest) {
+                    $orderStatusCounts['return']++;
+                } elseif ($status === 'pending') {
                     $orderStatusCounts['pending']++;
                 } elseif ($status === 'confirmed') {
                     $orderStatusCounts['pickup']++;
+                } elseif ($status === 'picked_up') {
+                    $orderStatusCounts['picked_up']++;
                 } elseif ($status === 'shipping') {
                     $orderStatusCounts['shipping']++;
                 } elseif ($status === 'completed') {
@@ -228,11 +290,23 @@ class AccountController extends BaseController
             $statusDatabaseMap = [
                 'pending' => 'pending',
                 'pickup' => 'confirmed',
+                'picked_up' => 'picked_up',
                 'shipping' => 'shipping',
                 'review' => 'completed',
                 'cancelled' => 'cancelled',
             ];
-            if (isset($statusDatabaseMap[$orderStatusFilter])) {
+            if ($orderStatusFilter === 'return') {
+                $orders = array_values(array_filter(
+                    $orders,
+                    static fn($order) => !empty($order['return_status']) && $order['return_status'] !== 'cancelled'
+                ));
+            } elseif ($orderStatusFilter === 'review') {
+                $orders = array_values(array_filter(
+                    $orders,
+                    static fn($order) => (string) $order['status'] === 'completed'
+                        && (empty($order['return_status']) || $order['return_status'] === 'cancelled')
+                ));
+            } elseif (isset($statusDatabaseMap[$orderStatusFilter])) {
                 $orders = array_values(array_filter(
                     $orders,
                     static fn($order) => (string) $order['status'] === $statusDatabaseMap[$orderStatusFilter]
@@ -240,7 +314,7 @@ class AccountController extends BaseController
             }
 
             if ($tab === 'orders' && $requestedOrderId > 0) {
-                foreach ($orders as $order) {
+                foreach ($allOrders as $order) {
                     if ((int) $order['id'] === $requestedOrderId) {
                         $selectedOrder = $order;
                         break;
@@ -249,6 +323,7 @@ class AccountController extends BaseController
                 if ($selectedOrder) {
                     $orderDetails = $orderModel->getDetailsForUser($requestedOrderId, $userId, $userEmail);
                     $returnRequest = $orderModel->getReturnRequestForUser($requestedOrderId, $userId, $userEmail);
+                    $cancellationRequest = $orderModel->getCancellationRequestForUser($requestedOrderId, $userId, $userEmail);
                 } else {
                     $orderNotFound = true;
                 }
@@ -386,6 +461,112 @@ class AccountController extends BaseController
             }
             throw $exception;
         }
+    }
+
+    private function submitReview($orderId, $productId, $userId, $userEmail)
+    {
+        $rating = filter_var($_POST['rating'] ?? null, FILTER_VALIDATE_INT);
+        $content = trim(request_string($_POST, 'content'));
+        $contentLength = function_exists('mb_strlen')
+            ? mb_strlen($content, 'UTF-8')
+            : strlen($content);
+        if (!$rating || $rating < 1 || $rating > 5 || $contentLength > 3000) {
+            throw new DomainException('Vui lòng chọn số sao hợp lệ và nhập nhận xét tối đa 3.000 ký tự.');
+        }
+
+        $storedFiles = [];
+        try {
+            $images = $_FILES['review_images'] ?? null;
+            if (is_array($images) && isset($images['name']) && is_array($images['name'])) {
+                if (count($images['name']) > 4) {
+                    throw new DomainException('Đánh giá chỉ được đính kèm tối đa 4 hình ảnh.');
+                }
+                foreach (array_keys($images['name']) as $index) {
+                    $file = [];
+                    foreach (['name', 'type', 'tmp_name', 'error', 'size'] as $field) {
+                        $file[$field] = $images[$field][$index] ?? null;
+                    }
+                    $storedFile = $this->storeReviewEvidence($file, 'image', true);
+                    if ($storedFile !== null) {
+                        $storedFiles[] = ['media_type' => 'image', 'file_path' => $storedFile];
+                    }
+                }
+            }
+
+            $video = $_FILES['review_video'] ?? null;
+            if (is_array($video)) {
+                $storedFile = $this->storeReviewEvidence($video, 'video', true);
+                if ($storedFile !== null) {
+                    $storedFiles[] = ['media_type' => 'video', 'file_path' => $storedFile];
+                }
+            }
+
+            (new ReviewModel())->createForCompletedOrder(
+                $orderId,
+                $productId,
+                $userId,
+                $userEmail,
+                $rating,
+                $content,
+                $storedFiles
+            );
+        } catch (Throwable $exception) {
+            foreach ($storedFiles as $storedFile) {
+                delete_upload_file($storedFile['file_path']);
+            }
+            throw $exception;
+        }
+    }
+
+    private function storeReviewEvidence(array $file, $type, $optional = false)
+    {
+        $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE && $optional) {
+            return null;
+        }
+        if ($error !== UPLOAD_ERR_OK) {
+            if ($error === UPLOAD_ERR_INI_SIZE || $error === UPLOAD_ERR_FORM_SIZE) {
+                throw new DomainException('Một tệp đánh giá vượt quá giới hạn tải lên của máy chủ.');
+            }
+            throw new DomainException('Tệp đánh giá tải lên không hợp lệ.');
+        }
+
+        $tmpName = (string) ($file['tmp_name'] ?? '');
+        $size = (int) ($file['size'] ?? 0);
+        $maxSize = $type === 'image' ? 5 * 1024 * 1024 : 50 * 1024 * 1024;
+        if ($tmpName === '' || !is_uploaded_file($tmpName) || $size < 1024 || $size > $maxSize) {
+            throw new DomainException($type === 'image'
+                ? 'Mỗi ảnh đánh giá cần có dung lượng từ 1KB đến 5MB.'
+                : 'Video đánh giá cần có dung lượng từ 1KB đến 50MB.');
+        }
+        if (!class_exists('finfo')) {
+            throw new DomainException('Máy chủ chưa hỗ trợ kiểm tra tệp tải lên. Vui lòng liên hệ quản trị viên.');
+        }
+
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmpName);
+        $extensions = $type === 'image'
+            ? ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif']
+            : ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov'];
+        if (!is_string($mime) || !isset($extensions[$mime])) {
+            throw new DomainException($type === 'image'
+                ? 'Ảnh đánh giá chỉ hỗ trợ JPG, PNG, WEBP hoặc GIF.'
+                : 'Video đánh giá chỉ hỗ trợ MP4, WEBM hoặc MOV.');
+        }
+        if ($type === 'image' && !@getimagesize($tmpName)) {
+            throw new DomainException('Tệp hình ảnh đánh giá không hợp lệ.');
+        }
+
+        $folder = 'reviews';
+        $directory = PATH_ASSETS_UPLOADS . $folder . DIRECTORY_SEPARATOR;
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            throw new DomainException('Không thể lưu tệp đánh giá. Vui lòng liên hệ quản trị viên.');
+        }
+        $fileName = date('YmdHis') . '-' . bin2hex(random_bytes(8)) . '.' . $extensions[$mime];
+        if (!move_uploaded_file($tmpName, $directory . $fileName)) {
+            throw new DomainException('Không thể lưu tệp đánh giá. Vui lòng thử lại sau.');
+        }
+
+        return $folder . '/' . $fileName;
     }
 
     private function storeReturnEvidence(array $file, $type)

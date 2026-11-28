@@ -123,6 +123,20 @@ CREATE TABLE coupons (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE notifications (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(180) NOT NULL,
+    message TEXT NULL,
+    image_path VARCHAR(500) NULL,
+    link_url VARCHAR(500) NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    starts_at DATETIME NULL,
+    ends_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_notifications_active_dates (is_active, starts_at, ends_at)
+) ENGINE=InnoDB;
+
 CREATE TABLE orders (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NULL,
@@ -137,7 +151,7 @@ CREATE TABLE orders (
     coupon_id BIGINT UNSIGNED NULL,
     payment_method ENUM('cod', 'bank_transfer') NOT NULL DEFAULT 'cod',
     shipping_method ENUM('standard', 'express') NOT NULL DEFAULT 'standard',
-    status ENUM('pending', 'confirmed', 'shipping', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'confirmed', 'picked_up', 'shipping', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
     shipping_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -177,6 +191,19 @@ CREATE TABLE order_details (
     CONSTRAINT fk_order_details_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+CREATE TABLE cancellation_requests (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT UNSIGNED NOT NULL,
+    reason VARCHAR(40) NOT NULL,
+    description TEXT NULL,
+    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at DATETIME NULL,
+    CONSTRAINT fk_cancellation_requests_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    INDEX idx_cancellation_requests_status_created (status, created_at),
+    INDEX idx_cancellation_requests_order (order_id)
+) ENGINE=InnoDB;
+
 CREATE TABLE payments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT UNSIGNED NOT NULL,
@@ -194,7 +221,7 @@ CREATE TABLE return_requests (
     order_id BIGINT UNSIGNED NOT NULL,
     reason VARCHAR(40) NOT NULL,
     description TEXT NOT NULL,
-    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'approved', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     reviewed_at DATETIME NULL,
     CONSTRAINT fk_return_requests_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
@@ -223,6 +250,15 @@ CREATE TABLE reviews (
     CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT chk_reviews_rating CHECK (rating BETWEEN 1 AND 5),
     UNIQUE KEY uq_reviews_user_product (user_id, product_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE review_media (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT UNSIGNED NOT NULL,
+    media_type ENUM('image', 'video') NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_review_media_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
+    INDEX idx_review_media_review (review_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE contacts (

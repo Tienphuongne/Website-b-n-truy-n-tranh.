@@ -151,6 +151,23 @@ a { transition: color .15s ease; }
     min-width: 18px;
     padding: 0 5px;
 }
+.notification-link { position: relative; }
+.notification-count {
+    align-items: center;
+    background: var(--accent);
+    border: 2px solid #fff;
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    font-size: 8px;
+    height: 18px;
+    justify-content: center;
+    min-width: 18px;
+    padding: 0 4px;
+    position: absolute;
+    right: -10px;
+    top: -9px;
+}
 
 /* Detail page save control */
 .wishlist-detail-form { margin-top: 12px; }
@@ -540,8 +557,30 @@ a { transition: color .15s ease; }
 .status-confirmed { background: #e7f2ff; color: #2a64a8; }
 .status-shipping { background: #efe9ff; color: #6545b5; }
 .status-completed { background: #e7f7ee; color: #26825a; }
+.status-return { background: #fff1e5; color: #a65c24; }
 .status-cancelled { background: #f4e8e8; color: #a34d4d; }
 .account-alert { background: #fff7f1; border: 1px solid #f6dcca; border-radius: 9px; color: #9a5a36; font-size: 11px; margin-top: 14px; padding: 10px 13px; }
+.account-notification-list, .account-promotion-list { display: flex; flex-direction: column; gap: 9px; }
+.account-banner-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.account-banner { align-items: center; border: 1px solid #f0dfd4; border-radius: 11px; display: grid; gap: 12px; grid-template-columns: 130px 1fr; overflow: hidden; padding: 8px; text-decoration: none; }
+.account-banner img { border-radius: 8px; height: 72px; object-fit: cover; width: 130px; }
+.account-banner strong { color: #34363b; display: block; font-size: 12px; }
+.account-banner p { color: var(--muted); font-size: 10px; margin: 4px 0 0; }
+.account-notification-item { align-items: center; border: 1px solid #eee7e2; border-radius: 10px; display: grid; gap: 11px; grid-template-columns: 9px 1fr auto; padding: 12px 14px; }
+.account-notification-item strong { display: block; font-size: 12px; }
+.account-notification-item p { color: var(--muted); font-size: 9px; margin: 3px 0 0; }
+.account-notification-item a { color: var(--accent); font-size: 10px; font-weight: 700; }
+.account-notification-dot { border-radius: 50%; height: 9px; width: 9px; background: #9aa0a6; }
+.status-dot-pending { background: #e6a33a; }
+.status-dot-confirmed { background: #5a96d2; }
+.status-dot-picked_up { background: #7b72b7; }
+.status-dot-shipping { background: #6545b5; }
+.status-dot-completed { background: #2e9b69; }
+.status-dot-cancelled { background: #c95d5d; }
+.account-promotion-card { align-items: center; border: 1px solid #f0dfd4; border-radius: 11px; display: grid; gap: 12px; grid-template-columns: 82px 1fr auto; padding: 12px; }
+.account-promotion-value { background: #fff3ec; border-radius: 9px; color: var(--accent-dark); font-size: 16px; font-weight: 800; padding: 16px 6px; text-align: center; }
+.account-promotion-info strong { font-size: 13px; letter-spacing: .04em; }
+.account-promotion-info p { color: var(--muted); font-size: 9px; margin: 4px 0 0; }
 
 .account-order-detail { padding: 20px 22px; }
 .order-detail-head { align-items: flex-start; border-bottom: 1px solid #f1e6df; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; }
@@ -579,6 +618,13 @@ a { transition: color .15s ease; }
 .account-review-item small { color: #92939a; font-size: 9px; }
 .review-stars { color: #f4b400; letter-spacing: 1px; }
 .account-review-form .form-select, .account-review-form .form-control { font-size: 11px; }
+.rating-choice { border: 0; margin-left: 0; min-width: 0; padding: 0; }
+.rating-choice legend { float: none; margin-bottom: 6px; }
+.rating-stars-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; width: max-content; }
+.rating-input-radio { clip: rect(0, 0, 0, 0); height: 1px; margin: -1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
+.rating-stars-input label { color: #c6c6c6; cursor: pointer; font-size: 30px; line-height: 1; padding: 0 3px; }
+.rating-stars-input input:checked + label, .rating-stars-input input:checked ~ label, .rating-stars-input label:hover, .rating-stars-input label:hover ~ label { color: #efa931; }
+.rating-stars-input input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 3px; }
 .order-detail-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 7px; }
 .order-detail-actions form { margin: 0; }
 .profile-form-actions { display: flex; gap: 8px; margin-top: 16px; }

@@ -37,6 +37,14 @@ class AdminController extends BaseController
         try {
             $model = new AdminModel();
             $definition = $model->getDefinition($key);
+            if ($key === 'notifications') {
+                (new NotificationModel())->ensureTable();
+                $definition = $model->getDefinition($key);
+            }
+            if ($key === 'cancellations') {
+                (new OrderModel())->ensureCancellationWorkflow();
+                $definition = $model->getDefinition($key);
+            }
 
             if (
                 !$definition
@@ -56,24 +64,34 @@ class AdminController extends BaseController
                 $detail = $id
                     ? ($key === 'returns'
                         ? (new OrderModel())->getReturnRequestDetail($id)
-                        : $model->getOrderDetail($id))
+                        : ($key === 'cancellations'
+                            ? (new OrderModel())->getCancellationRequestDetail($id)
+                            : $model->getOrderDetail($id)))
                     : null;
                 if (!$detail) {
                     http_response_code(404);
                     $databaseError = $key === 'returns'
                         ? 'Không tìm thấy yêu cầu trả hàng cần xem.'
-                        : 'Không tìm thấy đơn hàng cần xem.';
-                    $title = $key === 'returns' ? 'Không tìm thấy yêu cầu' : 'Không tìm thấy đơn hàng';
+                        : ($key === 'cancellations'
+                            ? 'Không tìm thấy yêu cầu hủy đơn cần xem.'
+                            : 'Không tìm thấy đơn hàng cần xem.');
+                    $title = $key === 'returns'
+                        ? 'Không tìm thấy yêu cầu'
+                        : ($key === 'cancellations' ? 'Không tìm thấy yêu cầu hủy' : 'Không tìm thấy đơn hàng');
                     $view = 'admin/resource';
-                    $resource = ['title' => $key === 'returns' ? 'Yêu cầu trả hàng' : 'Đơn hàng', 'rows' => []];
+                    $resource = ['title' => $key === 'returns' ? 'Yêu cầu trả hàng' : ($key === 'cancellations' ? 'Yêu cầu hủy đơn' : 'Đơn hàng'), 'rows' => []];
                     require PATH_VIEW . 'admin.php';
                     return;
                 }
 
                 $title = $key === 'returns'
                     ? 'Yêu cầu trả hàng #' . (int) $id
-                    : 'Chi tiết đơn hàng #' . (int) $id;
-                $view = $key === 'returns' ? 'admin/return-detail' : 'admin/order-detail';
+                    : ($key === 'cancellations'
+                        ? 'Yêu cầu hủy đơn #' . (int) $id
+                        : 'Chi tiết đơn hàng #' . (int) $id);
+                $view = $key === 'returns'
+                    ? 'admin/return-detail'
+                    : ($key === 'cancellations' ? 'admin/cancellation-detail' : 'admin/order-detail');
                 require PATH_VIEW . 'admin.php';
                 return;
             }
@@ -171,6 +189,30 @@ class AdminController extends BaseController
         $title = $resource['title'] ?? ($definition['title'] ?? 'Quản lý dữ liệu');
         $view = 'admin/resource';
         require PATH_VIEW . 'admin.php';
+    }
+
+    public function reviewCancellationRequest()
+    {
+        $this->requireAdmin();
+        $this->requirePost();
+        $requestId = filter_var($_POST['request_id'] ?? null, FILTER_VALIDATE_INT);
+        if (!$requestId || $requestId <= 0) {
+            flash('danger', 'Mã yêu cầu hủy đơn không hợp lệ.');
+            redirect('admin/cancellations');
+        }
+
+        try {
+            (new OrderModel())->reviewCancellationRequest(
+                $requestId,
+                request_string($_POST, 'status')
+            );
+            flash('success', 'Đã cập nhật quyết định hủy đơn hàng.');
+        } catch (DomainException $exception) {
+            flash('danger', $exception->getMessage());
+        } catch (PDOException | RuntimeException $exception) {
+            flash('danger', $this->reportDatabaseFailure($exception));
+        }
+        redirect('admin/cancellations/detail?id=' . (int) $requestId);
     }
 
     public function reviewReturnRequest()

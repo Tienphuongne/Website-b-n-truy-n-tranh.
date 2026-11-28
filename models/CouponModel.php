@@ -40,7 +40,7 @@ class CouponModel extends BaseModel
         $email = (string) $email;
 
         $validCoupons = $this->execute(
-            "SELECT id, code, discount_type, discount_value, minimum_order, ends_at
+            "SELECT id, code, discount_type, discount_value, minimum_order, starts_at, ends_at, usage_limit, used_count
              FROM coupons
              WHERE is_active = 1
                AND (starts_at IS NULL OR starts_at <= NOW())
@@ -78,6 +78,7 @@ class CouponModel extends BaseModel
             'used' => count($usedIds),
             'total' => count($validCoupons),
             'codes' => array_slice($available, 0, 4),
+            'promotions' => $validCoupons,
         ];
     }
 

@@ -62,7 +62,7 @@ class AdminModel extends BaseModel
         'orders' => [
             'title' => 'Đơn hàng', 'query' => 'SELECT id, customer_name, total_amount, status, created_at FROM orders ORDER BY created_at DESC LIMIT 100',
             'table' => 'orders', 'create' => false, 'edit' => true, 'delete' => false, 'detail' => true,
-            'fields' => [['name' => 'status', 'label' => 'Trạng thái đơn hàng', 'type' => 'select', 'options' => ['pending' => 'Chờ xác nhận', 'confirmed' => 'Đã xác nhận', 'shipping' => 'Đang giao', 'completed' => 'Hoàn tất', 'cancelled' => 'Đã hủy']]],
+            'fields' => [['name' => 'status', 'label' => 'Trạng thái đơn hàng', 'type' => 'select', 'options' => ['pending' => 'Chờ xác nhận', 'confirmed' => 'Chờ lấy hàng', 'picked_up' => 'Lấy hàng thành công', 'shipping' => 'Đang giao', 'completed' => 'Hoàn tất', 'cancelled' => 'Đã hủy']]],
         ],
         'returns' => [
             'title' => 'Yêu cầu trả hàng',
@@ -70,6 +70,14 @@ class AdminModel extends BaseModel
                         FROM return_requests rr
                         INNER JOIN orders o ON o.id = rr.order_id
                         ORDER BY rr.created_at DESC LIMIT 100',
+            'create' => false, 'edit' => false, 'delete' => false, 'detail' => true,
+        ],
+        'cancellations' => [
+            'title' => 'Yêu cầu hủy đơn',
+            'query' => "SELECT cr.id, cr.order_id, o.customer_name, cr.reason, cr.status, cr.created_at
+                        FROM cancellation_requests cr
+                        INNER JOIN orders o ON o.id = cr.order_id
+                        ORDER BY cr.created_at DESC LIMIT 100",
             'create' => false, 'edit' => false, 'delete' => false, 'detail' => true,
         ],
         'contacts' => [
@@ -86,6 +94,21 @@ class AdminModel extends BaseModel
             'title' => 'Đánh giá', 'query' => 'SELECT id, product_id, user_id, rating, status, created_at FROM reviews ORDER BY created_at DESC LIMIT 100',
             'table' => 'reviews', 'create' => false, 'edit' => true, 'delete' => true,
             'fields' => [['name' => 'status', 'label' => 'Trạng thái đánh giá', 'type' => 'select', 'options' => ['pending' => 'Chờ duyệt', 'approved' => 'Đã duyệt', 'rejected' => 'Từ chối']]],
+        ],
+        'notifications' => [
+            'title' => 'Thông báo & banner',
+            'query' => 'SELECT id, title, image_path, is_active, starts_at, ends_at, created_at FROM notifications ORDER BY created_at DESC LIMIT 100',
+            'table' => 'notifications', 'create' => true, 'edit' => true, 'delete' => true,
+            'fields' => [
+                ['name' => 'title', 'label' => 'Tiêu đề thông báo', 'type' => 'text', 'required' => true],
+                ['name' => 'message', 'label' => 'Nội dung', 'type' => 'textarea'],
+                ['name' => 'image_path', 'label' => 'Đường dẫn ảnh banner', 'type' => 'text'],
+                ['name' => 'image_upload', 'label' => 'Tải ảnh banner', 'type' => 'file', 'column' => 'image_path', 'accept' => 'image/jpeg,image/png,image/webp,image/gif'],
+                ['name' => 'link_url', 'label' => 'Liên kết khi bấm thông báo', 'type' => 'text'],
+                ['name' => 'starts_at', 'label' => 'Bắt đầu hiển thị', 'type' => 'datetime-local'],
+                ['name' => 'ends_at', 'label' => 'Kết thúc hiển thị', 'type' => 'datetime-local'],
+                ['name' => 'is_active', 'label' => 'Đang hiển thị', 'type' => 'checkbox', 'default' => 1],
+            ],
         ],
         'coupons' => [
             'title' => 'Mã giảm giá',
@@ -514,7 +537,8 @@ class AdminModel extends BaseModel
                     }
                     $file = $_FILES[$field['name']] ?? null;
                     if (is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
-                        $uploadedPath = save_uploaded_image($file, 'products');
+                        $uploadedFolder = $key === 'notifications' ? 'notifications' : 'products';
+                        $uploadedPath = save_uploaded_image($file, $uploadedFolder);
                         if ($uploadedPath !== null) {
                             $values[$field['column']] = $uploadedPath;
                             $uploadedPaths[] = $uploadedPath;
@@ -563,9 +587,10 @@ class AdminModel extends BaseModel
             $isProduct = $key === 'products';
             $productId = $id ? (int) $id : null;
 
-            if ($isProduct && $productId && $coverColumn) {
+            if (($isProduct || $key === 'notifications') && $productId && $coverColumn) {
+                $oldTable = $isProduct ? 'products' : 'notifications';
                 $oldCoverPath = $this->execute(
-                    'SELECT ' . $coverColumn . ' FROM products WHERE id = :id LIMIT 1',
+                    'SELECT ' . $coverColumn . ' FROM ' . $oldTable . ' WHERE id = :id LIMIT 1',
                     ['id' => $productId]
                 )->fetchColumn();
             }
@@ -642,7 +667,7 @@ class AdminModel extends BaseModel
                 $this->pdo->commit();
             }
 
-            if ($isProduct) {
+            if ($isProduct || $key === 'notifications') {
                 if ($oldCoverPath && array_key_exists($coverColumn, $values) && $values[$coverColumn] !== $oldCoverPath) {
                     delete_upload_file($oldCoverPath);
                 }
@@ -712,6 +737,15 @@ class AdminModel extends BaseModel
                 ['product_id' => (int) $id]
             )->fetchAll(PDO::FETCH_COLUMN);
             $uploadedFiles = array_merge($uploadedFiles, $gallery);
+        }
+        if ($definition['table'] === 'notifications') {
+            $image = $this->execute(
+                'SELECT image_path FROM notifications WHERE id = :id LIMIT 1',
+                ['id' => (int) $id]
+            )->fetchColumn();
+            if ($image) {
+                $uploadedFiles[] = (string) $image;
+            }
         }
 
         $this->execute(

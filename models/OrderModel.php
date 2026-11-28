@@ -2,6 +2,59 @@
 
 class OrderModel extends BaseModel
 {
+    public function ensureCancellationWorkflow()
+    {
+        $this->execute(
+            "CREATE TABLE IF NOT EXISTS cancellation_requests (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                order_id BIGINT UNSIGNED NOT NULL,
+                reason VARCHAR(40) NOT NULL,
+                description TEXT NULL,
+                status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                reviewed_at DATETIME NULL,
+                CONSTRAINT fk_cancellation_requests_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                INDEX idx_cancellation_requests_status_created (status, created_at),
+                INDEX idx_cancellation_requests_order (order_id)
+            ) ENGINE=InnoDB"
+        );
+
+        $column = $this->execute(
+            "SELECT COLUMN_TYPE
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'orders'
+               AND COLUMN_NAME = 'status'
+             LIMIT 1"
+        )->fetch();
+        $columnType = (string) ($column['COLUMN_TYPE'] ?? '');
+        if ($columnType !== '' && stripos($columnType, "'cancelled'") === false) {
+            $this->execute(
+                "ALTER TABLE orders
+                 MODIFY COLUMN status ENUM(
+                     'pending',
+                     'confirmed',
+                     'picked_up',
+                     'shipping',
+                     'completed',
+                     'cancelled'
+                 ) NOT NULL DEFAULT 'pending'"
+            );
+        }
+    }
+
+    public static function cancellationReasons()
+    {
+        return [
+            'no_need' => 'Tôi không còn nhu cầu mua',
+            'better_price' => 'Tôi tìm được giá bán tốt hơn',
+            'wrong_order' => 'Tôi đặt nhầm sản phẩm hoặc số lượng',
+            'shipping_address' => 'Tôi muốn thay đổi địa chỉ giao hàng',
+            'payment_issue' => 'Có vấn đề về thanh toán',
+            'other' => 'Lý do khác',
+        ];
+    }
+
     public static function returnReasons()
     {
         return [
@@ -139,7 +192,7 @@ class OrderModel extends BaseModel
 
     public function updateStatus($orderId, $status)
     {
-        $allowed = ['pending', 'confirmed', 'shipping', 'completed', 'cancelled'];
+        $allowed = ['pending', 'confirmed', 'picked_up', 'shipping', 'completed', 'cancelled'];
         if (!in_array($status, $allowed, true)) {
             throw new DomainException('Trạng thái đơn hàng không hợp lệ.');
         }
@@ -298,10 +351,20 @@ class OrderModel extends BaseModel
             "SELECT o.id, o.total_amount, o.status, o.created_at, o.coupon_id,
                     c.code AS coupon_code, o.discount_amount, o.shipping_fee,
                     o.payment_method, o.customer_name, o.phone, o.address, o.district, o.city,
+                    rr.status AS return_status,
                     (SELECT COUNT(*) FROM order_details od WHERE od.order_id = o.id) AS item_count,
                     (SELECT COALESCE(SUM(od.quantity), 0) FROM order_details od WHERE od.order_id = o.id) AS item_quantity
              FROM orders o
              LEFT JOIN coupons c ON c.id = o.coupon_id
+             LEFT JOIN (
+                 SELECT r.order_id, r.status
+                 FROM return_requests r
+                 INNER JOIN (
+                     SELECT order_id, MAX(id) AS latest_id
+                     FROM return_requests
+                     GROUP BY order_id
+                 ) latest ON latest.latest_id = r.id
+             ) rr ON rr.order_id = o.id
              WHERE o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email)
              ORDER BY o.created_at DESC, o.id DESC",
             ['user_id' => (int) $userId, 'email' => (string) $email]
@@ -325,8 +388,187 @@ class OrderModel extends BaseModel
         )->fetchAll();
     }
 
+    public function cancelForUser($orderId, $userId, $email = '')
+    {
+        $order = $this->execute(
+            'SELECT id, status FROM orders
+             WHERE id = :order_id
+               AND (user_id = :user_id OR (user_id IS NULL AND email = :email))
+             LIMIT 1',
+            [
+                'order_id' => (int) $orderId,
+                'user_id' => (int) $userId,
+                'email' => (string) $email,
+            ]
+        )->fetch();
+
+        if (!$order) {
+            throw new DomainException('Không tìm thấy đơn hàng trong lịch sử của bạn.');
+        }
+        if ((string) $order['status'] === 'pending') {
+            $this->updateStatus((int) $orderId, 'cancelled');
+            return 'cancelled';
+        }
+        if ((string) $order['status'] === 'confirmed') {
+            throw new DomainException('Đơn chờ lấy hàng cần được gửi yêu cầu và chờ quản trị viên phê duyệt.');
+        }
+
+        throw new DomainException('Đơn hàng đã qua giai đoạn chờ lấy hàng nên không thể yêu cầu hủy.');
+    }
+
+    public function requestCancellationForUser($orderId, $userId, $email, $reason, $description = '')
+    {
+        if (!array_key_exists($reason, self::cancellationReasons())) {
+            throw new DomainException('Vui lòng chọn lý do hủy đơn hợp lệ.');
+        }
+        $this->ensureCancellationWorkflow();
+
+        $order = $this->execute(
+            'SELECT id, status FROM orders
+             WHERE id = :order_id
+               AND (user_id = :user_id OR (user_id IS NULL AND email = :email))
+             LIMIT 1',
+            [
+                'order_id' => (int) $orderId,
+                'user_id' => (int) $userId,
+                'email' => (string) $email,
+            ]
+        )->fetch();
+
+        if (!$order) {
+            throw new DomainException('Không tìm thấy đơn hàng trong lịch sử của bạn.');
+        }
+
+        if ((string) $order['status'] === 'pending') {
+            $this->saveCancellationRequest((int) $orderId, $reason, trim($description), 'approved');
+            $this->updateStatus((int) $orderId, 'cancelled');
+            return 'cancelled';
+        }
+
+        if ((string) $order['status'] !== 'confirmed') {
+            throw new DomainException('Chỉ đơn đang chờ xác nhận hoặc chờ lấy hàng mới được yêu cầu hủy.');
+        }
+
+        $active = $this->execute(
+            "SELECT id FROM cancellation_requests
+             WHERE order_id = :order_id AND status = 'pending'
+             LIMIT 1",
+            ['order_id' => (int) $orderId]
+        )->fetch();
+        if ($active) {
+            throw new DomainException('Đơn hàng này đang có yêu cầu hủy chờ quản trị viên phê duyệt.');
+        }
+
+        $this->saveCancellationRequest((int) $orderId, $reason, trim($description), 'pending');
+        return 'pending';
+    }
+
+    private function saveCancellationRequest($orderId, $reason, $description, $status)
+    {
+        $this->execute(
+            'INSERT INTO cancellation_requests (order_id, reason, description, status, created_at)
+             VALUES (:order_id, :reason, :description, :status, NOW())',
+            [
+                'order_id' => (int) $orderId,
+                'reason' => $reason,
+                'description' => $description,
+                'status' => $status,
+            ]
+        );
+    }
+
+    public function getCancellationRequestForUser($orderId, $userId, $email = '')
+    {
+        $this->ensureCancellationWorkflow();
+        $tableExists = $this->execute(
+            "SELECT COUNT(*)
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'cancellation_requests'"
+        )->fetchColumn();
+        if (!(bool) $tableExists) {
+            return null;
+        }
+
+        return $this->execute(
+            "SELECT cr.id, cr.reason, cr.description, cr.status, cr.created_at, cr.reviewed_at
+             FROM cancellation_requests cr
+             INNER JOIN orders o ON o.id = cr.order_id
+             WHERE o.id = :order_id
+               AND (o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email))
+             ORDER BY cr.id DESC
+             LIMIT 1",
+            [
+                'order_id' => (int) $orderId,
+                'user_id' => (int) $userId,
+                'email' => (string) $email,
+            ]
+        )->fetch() ?: null;
+    }
+
+    public function getCancellationRequestDetail($requestId)
+    {
+        $this->ensureCancellationWorkflow();
+        $request = $this->execute(
+            'SELECT cr.*, o.customer_name, o.phone, o.email, o.status AS order_status,
+                    o.total_amount, o.payment_method, o.id AS order_id
+             FROM cancellation_requests cr
+             INNER JOIN orders o ON o.id = cr.order_id
+             WHERE cr.id = :id LIMIT 1',
+            ['id' => (int) $requestId]
+        )->fetch();
+        if (!$request) {
+            return null;
+        }
+        $request['items'] = $this->execute(
+            'SELECT product_name, unit_price, quantity FROM order_details
+             WHERE order_id = :order_id ORDER BY id',
+            ['order_id' => (int) $request['order_id']]
+        )->fetchAll();
+        return $request;
+    }
+
+    public function reviewCancellationRequest($requestId, $decision)
+    {
+        if (!in_array($decision, ['approved', 'rejected'], true)) {
+            throw new DomainException('Quyết định phê duyệt không hợp lệ.');
+        }
+        $this->ensureCancellationWorkflow();
+        $request = $this->execute(
+            'SELECT id, order_id, status FROM cancellation_requests
+             WHERE id = :id LIMIT 1',
+            ['id' => (int) $requestId]
+        )->fetch();
+        if (!$request) {
+            throw new DomainException('Không tìm thấy yêu cầu hủy đơn.');
+        }
+        if ((string) $request['status'] !== 'pending') {
+            throw new DomainException('Yêu cầu hủy đơn đã được xử lý.');
+        }
+
+        if ($decision === 'approved') {
+            $this->updateStatus((int) $request['order_id'], 'cancelled');
+        }
+        $this->execute(
+            'UPDATE cancellation_requests
+             SET status = :status, reviewed_at = NOW()
+             WHERE id = :id',
+            ['status' => $decision, 'id' => (int) $requestId]
+        );
+    }
+
     public function getReturnRequestForUser($orderId, $userId, $email = '')
     {
+        $tableExists = $this->execute(
+            "SELECT COUNT(*)
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'return_requests'"
+        )->fetchColumn();
+        if (!(bool) $tableExists) {
+            return null;
+        }
+
         $request = $this->execute(
             "SELECT rr.id, rr.reason, rr.description, rr.status, rr.created_at, rr.reviewed_at
              FROM return_requests rr
@@ -421,6 +663,45 @@ class OrderModel extends BaseModel
             $this->pdo->commit();
 
             return $requestId;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function cancelReturnRequestForUser($requestId, $orderId, $userId, $email = '')
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $request = $this->execute(
+                'SELECT rr.id, rr.status
+                 FROM return_requests rr
+                 INNER JOIN orders o ON o.id = rr.order_id
+                 WHERE rr.id = :request_id
+                   AND o.id = :order_id
+                   AND (o.user_id = :user_id OR (o.user_id IS NULL AND o.email = :email))
+                 FOR UPDATE',
+                [
+                    'request_id' => (int) $requestId,
+                    'order_id' => (int) $orderId,
+                    'user_id' => (int) $userId,
+                    'email' => (string) $email,
+                ]
+            )->fetch();
+            if (!$request) {
+                throw new DomainException('Không tìm thấy yêu cầu trả hàng trong đơn của bạn.');
+            }
+            if ($request['status'] !== 'pending') {
+                throw new DomainException('Chỉ có thể hủy yêu cầu trả hàng khi quản trị viên chưa xử lý.');
+            }
+
+            $this->execute(
+                "UPDATE return_requests SET status = 'cancelled' WHERE id = :id AND status = 'pending'",
+                ['id' => (int) $requestId]
+            );
+            $this->pdo->commit();
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
