@@ -7,6 +7,8 @@
             <a class="<?= $tab === 'profile' ? 'active' : '' ?>" href="<?= e(url('account')) ?>">Thông tin cá nhân</a>
             <a class="<?= $tab === 'password' ? 'active' : '' ?>" href="<?= e(url('account?tab=password')) ?>">Đổi mật khẩu</a>
             <a class="<?= $tab === 'orders' ? 'active' : '' ?>" href="<?= e(url('account?tab=orders')) ?>">Đơn hàng</a>
+            <a class="<?= $tab === 'notifications' ? 'active' : '' ?>" href="<?= e(url('account?tab=notifications')) ?>">Thông báo đơn hàng</a>
+            <a class="<?= $tab === 'promotions' ? 'active' : '' ?>" href="<?= e(url('account?tab=promotions')) ?>">Khuyến mãi</a>
             <a class="<?= $tab === 'wishlist' ? 'active' : '' ?>" href="<?= e(url('account?tab=wishlist')) ?>">Yêu thích (<?= count($wishlistProducts) ?>)</a>
             <a class="<?= $tab === 'addresses' ? 'active' : '' ?>" href="<?= e(url('account?tab=addresses')) ?>">Sổ địa chỉ</a>
 
@@ -294,6 +296,67 @@
                     <?php endif; ?>
                 <?php else: ?>
                     <div class="muted-panel">Bạn chưa có đơn hàng nào. <a href="<?= e(url('products')) ?>">Khám phá truyện ngay</a>.</div>
+                <?php endif; ?>
+            <?php elseif ($tab === 'notifications'): ?>
+                <div class="account-section-head">
+                    <div><h2>Thông báo đơn hàng</h2><p>Cập nhật mới nhất về trạng thái đơn hàng của bạn.</p></div>
+                </div>
+                <?php
+                $notificationLabels = [
+                    'pending' => 'Đơn hàng đang chờ xác nhận',
+                    'confirmed' => 'Đơn hàng đã được xác nhận',
+                    'picked_up' => 'Đơn hàng đã được lấy thành công',
+                    'shipping' => 'Đơn hàng đang được giao',
+                    'completed' => 'Đơn hàng đã hoàn tất',
+                    'cancelled' => 'Đơn hàng đã được hủy',
+                ];
+                ?>
+                <?php if ($allOrders): ?>
+                    <div class="account-notification-list">
+                        <?php foreach (array_slice($allOrders, 0, 10) as $order): ?>
+                            <?php
+                            $orderStatus = (string) $order['status'];
+                            $orderDate = !empty($order['created_at']) ? date('d/m/Y H:i', strtotime((string) $order['created_at'])) : '—';
+                            ?>
+                            <article class="account-notification-item">
+                                <span class="account-notification-dot status-dot-<?= e($orderStatus) ?>" aria-hidden="true"></span>
+                                <div>
+                                    <strong><?= e($notificationLabels[$orderStatus] ?? 'Cập nhật đơn hàng') ?></strong>
+                                    <p>Mã đơn #<?= (int) $order['id'] ?> · <?= e($orderDate) ?></p>
+                                </div>
+                                <a href="<?= e(url('account?tab=orders&status=' . rawurlencode($orderStatusFilter) . '&order=' . (int) $order['id'])) ?>">Xem</a>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="muted-panel">Chưa có thông báo đơn hàng nào.</div>
+                <?php endif; ?>
+            <?php elseif ($tab === 'promotions'): ?>
+                <div class="account-section-head">
+                    <div><h2>Chương trình khuyến mãi</h2><p>Các mã giảm giá đang được kích hoạt trên cửa hàng.</p></div>
+                    <a class="btn btn-outline-primary btn-sm" href="<?= e(url('checkout')) ?>">Đi đến thanh toán</a>
+                </div>
+                <?php if (!empty($voucherSummary['promotions'])): ?>
+                    <div class="account-promotion-list">
+                        <?php foreach ($voucherSummary['promotions'] as $promotion): ?>
+                            <?php
+                            $promotionLabel = $promotion['discount_type'] === 'percent'
+                                ? rtrim(rtrim(number_format((float) $promotion['discount_value'], 1, '.', ''), '0'), '.') . '%'
+                                : number_format((float) $promotion['discount_value'], 0, ',', '.') . '₫';
+                            $endDate = !empty($promotion['ends_at']) ? date('d/m/Y', strtotime((string) $promotion['ends_at'])) : 'Không giới hạn';
+                            ?>
+                            <article class="account-promotion-card">
+                                <div class="account-promotion-value"><?= e($promotionLabel) ?></div>
+                                <div class="account-promotion-info">
+                                    <strong><?= e($promotion['code']) ?></strong>
+                                    <p>Đơn tối thiểu <?= number_format((float) $promotion['minimum_order'], 0, ',', '.') ?>₫ · Hết hạn <?= e($endDate) ?></p>
+                                </div>
+                                <a class="btn btn-sm btn-outline-primary" href="<?= e(url('checkout')) ?>">Sử dụng</a>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="muted-panel">Hiện chưa có chương trình khuyến mãi nào.</div>
                 <?php endif; ?>
             <?php elseif ($tab === 'wishlist'): ?>
                 <div class="account-section-head">

@@ -542,6 +542,22 @@ a { transition: color .15s ease; }
 .status-completed { background: #e7f7ee; color: #26825a; }
 .status-cancelled { background: #f4e8e8; color: #a34d4d; }
 .account-alert { background: #fff7f1; border: 1px solid #f6dcca; border-radius: 9px; color: #9a5a36; font-size: 11px; margin-top: 14px; padding: 10px 13px; }
+.account-notification-list, .account-promotion-list { display: flex; flex-direction: column; gap: 9px; }
+.account-notification-item { align-items: center; border: 1px solid #eee7e2; border-radius: 10px; display: grid; gap: 11px; grid-template-columns: 9px 1fr auto; padding: 12px 14px; }
+.account-notification-item strong { display: block; font-size: 12px; }
+.account-notification-item p { color: var(--muted); font-size: 9px; margin: 3px 0 0; }
+.account-notification-item a { color: var(--accent); font-size: 10px; font-weight: 700; }
+.account-notification-dot { border-radius: 50%; height: 9px; width: 9px; background: #9aa0a6; }
+.status-dot-pending { background: #e6a33a; }
+.status-dot-confirmed { background: #5a96d2; }
+.status-dot-picked_up { background: #7b72b7; }
+.status-dot-shipping { background: #6545b5; }
+.status-dot-completed { background: #2e9b69; }
+.status-dot-cancelled { background: #c95d5d; }
+.account-promotion-card { align-items: center; border: 1px solid #f0dfd4; border-radius: 11px; display: grid; gap: 12px; grid-template-columns: 82px 1fr auto; padding: 12px; }
+.account-promotion-value { background: #fff3ec; border-radius: 9px; color: var(--accent-dark); font-size: 16px; font-weight: 800; padding: 16px 6px; text-align: center; }
+.account-promotion-info strong { font-size: 13px; letter-spacing: .04em; }
+.account-promotion-info p { color: var(--muted); font-size: 9px; margin: 4px 0 0; }
 
 .account-order-detail { padding: 20px 22px; }
 .order-detail-head { align-items: flex-start; border-bottom: 1px solid #f1e6df; display: flex; gap: 12px; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; }
