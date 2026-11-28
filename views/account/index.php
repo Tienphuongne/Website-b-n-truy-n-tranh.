@@ -38,6 +38,7 @@
                     'picked_up' => 'Lấy hàng thành công',
                     'shipping' => 'Đang giao',
                     'completed' => 'Hoàn tất',
+                    'return' => 'Trả hàng',
                     'cancelled' => 'Đã hủy',
                 ];
                 $paymentLabels = [
@@ -63,6 +64,7 @@
                         'picked_up' => 'Lấy hàng thành công',
                         'shipping' => 'Đang giao',
                         'review' => 'Hoàn tất',
+                        'return' => 'Trả hàng',
                         'cancelled' => 'Đã hủy',
                     ];
                     ?>
@@ -82,7 +84,8 @@
                             <tbody>
                             <?php foreach ($orders as $order): ?>
                                 <?php
-                                $orderStatus = (string) $order['status'];
+                                $hasReturnRequest = !empty($order['return_status']) && $order['return_status'] !== 'cancelled';
+                                $orderStatus = $hasReturnRequest ? 'return' : (string) $order['status'];
                                 $isSelected = $selectedOrder && (int) $selectedOrder['id'] === (int) $order['id'];
                                 ?>
                                 <tr class="<?= $isSelected ? 'is-selected' : '' ?>">
@@ -111,7 +114,9 @@
                         foreach ($orderDetails as $detail) {
                             $detailSubtotal += (float) $detail['unit_price'] * (int) $detail['quantity'];
                         }
-                        $detailStatus = (string) $selectedOrder['status'];
+                        $orderStatus = (string) $selectedOrder['status'];
+                        $hasReturnRequest = !empty($selectedOrder['return_status']) && $selectedOrder['return_status'] !== 'cancelled';
+                        $detailStatus = $hasReturnRequest ? 'return' : $orderStatus;
                         $addressParts = array_filter([
                             $selectedOrder['address'] ?? '',
                             $selectedOrder['district'] ?? '',
@@ -124,7 +129,7 @@
                                 <div><h3>Chi tiết đơn #<?= (int) $selectedOrder['id'] ?></h3><p>Đặt lúc <?= e($formatOrderDate($selectedOrder['created_at'])) ?></p></div>
                                 <div class="order-detail-actions">
                                     <span class="order-status-badge status-<?= e($detailStatus) ?>"><?= e($statusLabels[$detailStatus] ?? $detailStatus) ?></span>
-                                    <?php if ($detailStatus === 'completed'): ?>
+                                    <?php if ($orderStatus === 'completed'): ?>
                                         <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#order-review-<?= (int) $selectedOrder['id'] ?>" aria-expanded="false" aria-controls="order-review-<?= (int) $selectedOrder['id'] ?>">Đánh giá</button>
                                         <button class="btn btn-outline-danger btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#order-return-<?= (int) $selectedOrder['id'] ?>" aria-expanded="false" aria-controls="order-return-<?= (int) $selectedOrder['id'] ?>">Yêu cầu hoàn hàng</button>
                                     <?php endif; ?>
@@ -135,6 +140,14 @@
                                     <?php endif; ?>
                                 </div>
                             </div>
+                            <?php if ($returnRequest && in_array($returnRequest['status'], ['approved', 'rejected'], true)): ?>
+                                <div class="account-alert" role="status">
+                                    <strong>Thông báo yêu cầu hoàn hàng</strong>
+                                    <p class="mb-0"><?= $returnRequest['status'] === 'approved'
+                                        ? 'Yêu cầu của bạn đã được quản trị viên chấp thuận.'
+                                        : 'Yêu cầu của bạn đã bị quản trị viên từ chối.' ?> Nhấn “Yêu cầu hoàn hàng” để xem chi tiết.</p>
+                                </div>
+                            <?php endif; ?>
 
                             <?php if (in_array($detailStatus, ['pending', 'confirmed'], true)): ?>
                                 <?php if (!$cancellationRequest || $cancellationRequest['status'] === 'rejected'): ?>
@@ -202,7 +215,7 @@
                                 <div class="account-alert">Đơn hàng này chưa có thông tin sản phẩm.</div>
                             <?php endif; ?>
 
-                            <?php if ($detailStatus === 'completed'): ?>
+                            <?php if ($orderStatus === 'completed'): ?>
                                 <div class="collapse" id="order-review-<?= (int) $selectedOrder['id'] ?>">
                                     <div class="account-review-box">
                                         <h3>Đánh giá sản phẩm trong đơn hàng</h3>
@@ -260,17 +273,24 @@
                                 <div><span>Phí vận chuyển</span><strong><?= number_format((float) $selectedOrder['shipping_fee'], 0, ',', '.') ?>₫</strong></div>
                                 <div class="is-total"><span>Tổng thanh toán</span><strong><?= number_format((float) $selectedOrder['total_amount'], 0, ',', '.') ?>₫</strong></div>
                             </div>
-                            <?php if ($detailStatus === 'completed'): ?>
+                            <?php if ($orderStatus === 'completed'): ?>
                                 <div class="collapse" id="order-return-<?= (int) $selectedOrder['id'] ?>">
                                     <div class="return-request-box">
                                         <h3>Yêu cầu hoàn hàng và hoàn tiền</h3>
                                         <?php if ($returnRequest): ?>
                                             <?php
-                                            $returnStatusLabels = ['pending' => 'Chờ quản trị viên phê duyệt', 'approved' => 'Đã duyệt hoàn tiền', 'rejected' => 'Không được phê duyệt'];
+                                            $returnStatusLabels = ['pending' => 'Đang chờ duyệt', 'approved' => 'Đã được duyệt', 'rejected' => 'Bị từ chối', 'cancelled' => 'Đã hủy'];
                                             $returnReasons = OrderModel::returnReasons();
+                                            $returnStatusMessages = [
+                                                'pending' => 'Yêu cầu của bạn đã được gửi và đang chờ quản trị viên xử lý.',
+                                                'approved' => 'Yêu cầu hoàn hàng của bạn đã được quản trị viên chấp thuận.',
+                                                'rejected' => 'Yêu cầu hoàn hàng của bạn đã bị quản trị viên từ chối.',
+                                                'cancelled' => 'Bạn đã hủy yêu cầu hoàn hàng này.',
+                                            ];
                                             ?>
                                             <div class="account-alert">
-                                                <strong>Yêu cầu trả hàng: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
+                                                <strong>Trạng thái yêu cầu: <?= e($returnStatusLabels[$returnRequest['status']] ?? $returnRequest['status']) ?></strong>
+                                                <p><?= e($returnStatusMessages[$returnRequest['status']] ?? '') ?></p>
                                                 <p class="mb-1">Lý do: <?= e($returnReasons[$returnRequest['reason']] ?? $returnRequest['reason']) ?></p>
                                                 <p><?= nl2br(e($returnRequest['description'])) ?></p>
                                                 <div class="return-media-list">
@@ -283,9 +303,18 @@
                                                         <?php endif; ?>
                                                     <?php endforeach; ?>
                                                 </div>
+                                                <?php if ($returnRequest['status'] === 'pending'): ?>
+                                                    <form method="post" action="<?= e(url('account?tab=orders&status=return&order=' . (int) $selectedOrder['id'])) ?>" class="mt-3" data-confirm="Bạn có chắc muốn hủy yêu cầu hoàn hàng này?">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="form_type" value="cancel_return_request">
+                                                        <input type="hidden" name="order_id" value="<?= (int) $selectedOrder['id'] ?>">
+                                                        <input type="hidden" name="request_id" value="<?= (int) $returnRequest['id'] ?>">
+                                                        <button class="btn btn-outline-danger btn-sm" type="submit">Hủy yêu cầu hoàn hàng</button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endif; ?>
-                                        <?php if (!$returnRequest || $returnRequest['status'] === 'rejected'): ?>
+                                        <?php if (!$returnRequest || in_array($returnRequest['status'], ['rejected', 'cancelled'], true)): ?>
                                             <p>Chỉ áp dụng cho đơn đã giao thành công. Gửi đủ 4 ảnh và 1 video để quản trị viên xem xét.</p>
                                             <form method="post" enctype="multipart/form-data" action="<?= e(url('account?tab=orders&order=' . (int) $selectedOrder['id'])) ?>">
                                                 <?= csrf_field() ?>

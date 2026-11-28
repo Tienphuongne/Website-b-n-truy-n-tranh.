@@ -73,6 +73,23 @@ class AccountController extends BaseController
                     redirect('account?tab=orders&order=' . (int) $orderId);
                 }
 
+                if (($_POST['form_type'] ?? '') === 'cancel_return_request') {
+                    $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
+                    $requestId = filter_var($_POST['request_id'] ?? null, FILTER_VALIDATE_INT);
+                    if (!$orderId || $orderId <= 0 || !$requestId || $requestId <= 0) {
+                        throw new DomainException('Mã đơn hàng hoặc yêu cầu trả hàng không hợp lệ.');
+                    }
+
+                    (new OrderModel())->cancelReturnRequestForUser(
+                        $requestId,
+                        $orderId,
+                        $userId,
+                        $userEmail
+                    );
+                    flash('success', 'Đã hủy yêu cầu trả hàng. Đơn hàng đã trở về trạng thái hoàn tất.');
+                    redirect('account?tab=orders&status=review&order=' . (int) $orderId);
+                }
+
                 if (($_POST['form_type'] ?? '') === 'review') {
                     $orderId = filter_var($_POST['order_id'] ?? null, FILTER_VALIDATE_INT);
                     $productId = filter_var($_POST['product_id'] ?? null, FILTER_VALIDATE_INT);
@@ -246,11 +263,15 @@ class AccountController extends BaseController
                 'picked_up' => 0,
                 'shipping' => 0,
                 'review' => 0,
+                'return' => 0,
                 'cancelled' => 0,
             ];
             foreach ($allOrders as $order) {
                 $status = (string) $order['status'];
-                if ($status === 'pending') {
+                $hasReturnRequest = !empty($order['return_status']) && $order['return_status'] !== 'cancelled';
+                if ($hasReturnRequest) {
+                    $orderStatusCounts['return']++;
+                } elseif ($status === 'pending') {
                     $orderStatusCounts['pending']++;
                 } elseif ($status === 'confirmed') {
                     $orderStatusCounts['pickup']++;
@@ -272,7 +293,18 @@ class AccountController extends BaseController
                 'review' => 'completed',
                 'cancelled' => 'cancelled',
             ];
-            if (isset($statusDatabaseMap[$orderStatusFilter])) {
+            if ($orderStatusFilter === 'return') {
+                $orders = array_values(array_filter(
+                    $orders,
+                    static fn($order) => !empty($order['return_status']) && $order['return_status'] !== 'cancelled'
+                ));
+            } elseif ($orderStatusFilter === 'review') {
+                $orders = array_values(array_filter(
+                    $orders,
+                    static fn($order) => (string) $order['status'] === 'completed'
+                        && (empty($order['return_status']) || $order['return_status'] === 'cancelled')
+                ));
+            } elseif (isset($statusDatabaseMap[$orderStatusFilter])) {
                 $orders = array_values(array_filter(
                     $orders,
                     static fn($order) => (string) $order['status'] === $statusDatabaseMap[$orderStatusFilter]
