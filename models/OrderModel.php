@@ -2,6 +2,47 @@
 
 class OrderModel extends BaseModel
 {
+    public function ensureCancellationWorkflow()
+    {
+        $this->execute(
+            "CREATE TABLE IF NOT EXISTS cancellation_requests (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                order_id BIGINT UNSIGNED NOT NULL,
+                reason VARCHAR(40) NOT NULL,
+                description TEXT NULL,
+                status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                reviewed_at DATETIME NULL,
+                CONSTRAINT fk_cancellation_requests_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+                INDEX idx_cancellation_requests_status_created (status, created_at),
+                INDEX idx_cancellation_requests_order (order_id)
+            ) ENGINE=InnoDB"
+        );
+
+        $column = $this->execute(
+            "SELECT COLUMN_TYPE
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'orders'
+               AND COLUMN_NAME = 'status'
+             LIMIT 1"
+        )->fetch();
+        $columnType = (string) ($column['COLUMN_TYPE'] ?? '');
+        if ($columnType !== '' && stripos($columnType, "'cancelled'") === false) {
+            $this->execute(
+                "ALTER TABLE orders
+                 MODIFY COLUMN status ENUM(
+                     'pending',
+                     'confirmed',
+                     'picked_up',
+                     'shipping',
+                     'completed',
+                     'cancelled'
+                 ) NOT NULL DEFAULT 'pending'"
+            );
+        }
+    }
+
     public static function cancellationReasons()
     {
         return [
@@ -370,6 +411,7 @@ class OrderModel extends BaseModel
         if (!array_key_exists($reason, self::cancellationReasons())) {
             throw new DomainException('Vui lòng chọn lý do hủy đơn hợp lệ.');
         }
+        $this->ensureCancellationWorkflow();
 
         $order = $this->execute(
             'SELECT id, status FROM orders
@@ -388,8 +430,8 @@ class OrderModel extends BaseModel
         }
 
         if ((string) $order['status'] === 'pending') {
-            $this->updateStatus((int) $orderId, 'cancelled');
             $this->saveCancellationRequest((int) $orderId, $reason, trim($description), 'approved');
+            $this->updateStatus((int) $orderId, 'cancelled');
             return 'cancelled';
         }
 
@@ -427,6 +469,7 @@ class OrderModel extends BaseModel
 
     public function getCancellationRequestForUser($orderId, $userId, $email = '')
     {
+        $this->ensureCancellationWorkflow();
         $tableExists = $this->execute(
             "SELECT COUNT(*)
              FROM information_schema.TABLES
@@ -455,6 +498,7 @@ class OrderModel extends BaseModel
 
     public function getCancellationRequestDetail($requestId)
     {
+        $this->ensureCancellationWorkflow();
         $request = $this->execute(
             'SELECT cr.*, o.customer_name, o.phone, o.email, o.status AS order_status,
                     o.total_amount, o.payment_method, o.id AS order_id
@@ -479,6 +523,7 @@ class OrderModel extends BaseModel
         if (!in_array($decision, ['approved', 'rejected'], true)) {
             throw new DomainException('Quyết định phê duyệt không hợp lệ.');
         }
+        $this->ensureCancellationWorkflow();
         $request = $this->execute(
             'SELECT id, order_id, status FROM cancellation_requests
              WHERE id = :id LIMIT 1',

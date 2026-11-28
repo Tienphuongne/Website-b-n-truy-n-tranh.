@@ -37,6 +37,10 @@ class AdminController extends BaseController
         try {
             $model = new AdminModel();
             $definition = $model->getDefinition($key);
+            if ($key === 'cancellations') {
+                (new OrderModel())->ensureCancellationWorkflow();
+                $definition = $model->getDefinition($key);
+            }
 
             if (
                 !$definition
