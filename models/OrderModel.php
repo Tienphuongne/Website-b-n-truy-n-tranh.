@@ -351,6 +351,16 @@ class OrderModel extends BaseModel
 
     public function getReturnRequestForUser($orderId, $userId, $email = '')
     {
+        $tableExists = $this->execute(
+            "SELECT COUNT(*)
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'return_requests'"
+        )->fetchColumn();
+        if (!(bool) $tableExists) {
+            return null;
+        }
+
         $request = $this->execute(
             "SELECT rr.id, rr.reason, rr.description, rr.status, rr.created_at, rr.reviewed_at
              FROM return_requests rr
